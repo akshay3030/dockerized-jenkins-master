@@ -1,0 +1,1 @@
+# dockerized-jenkins-master-only
