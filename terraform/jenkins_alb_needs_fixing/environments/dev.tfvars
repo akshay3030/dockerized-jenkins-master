@@ -1,0 +1,5 @@
+environment = "dev"
+ami_id = "ami-0d1000aff9a9bad89"
+ec2_instance_type = "t2.micro"
+aws_region = "us-west-2"
+aws_profile = "default"

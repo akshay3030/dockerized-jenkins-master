@@ -1,0 +1,113 @@
+#!/bin/bash -v
+
+echo "*****Begin executing*** "
+echo "Wait a bit for the network"
+sleep 15s
+
+echo "list data template variable"
+echo ${region}
+echo ${ebs_volume_id}
+
+aws configure set default.region ${region}
+yum update -y
+yum install docker -y
+service docker start
+echo "docker setup & started"
+docker version
+chmod 766 /var/run/docker.sock
+
+
+curl -L "https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+echo "docker-compose setup"
+docker-compose -v
+
+InstanceID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+#Run it as backgroup detached process
+aws ec2 attach-volume --volume-id ${ebs_volume_id} --instance-id $InstanceID --device /dev/xvdb
+
+mkdir -p /var/jenkins_home/
+
+#if mount /dev/xvdb /var/jenkins_home/ | grep -i error 2>&1 > /dev/null
+#if file -s /dev/xvdb | grep -i "/dev/xvdb: data" 2>&1 > /dev/null
+
+#volume_attached=$(aws ec2 describe-instances --instance-ids $InstanceID --query 'Reservations[0].Instances[0].BlockDeviceMappings[?DeviceName==`/dev/xvdb`]' --output text | grep attached)
+#aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=i-0498ff5d9fa33b51c Name=attachment.delete-on-termination,Values=false
+
+aws ec2 describe-instances --instance-ids $InstanceID --query 'Reservations[0].Instances[0].BlockDeviceMappings[*]' --output text
+
+while true
+do
+
+    if aws ec2 describe-instances --instance-ids $InstanceID --query 'Reservations[0].Instances[0].BlockDeviceMappings[?DeviceName==`/dev/xvdb`]' --output text | grep "attached"
+     then
+        echo "ebs volume is attached successfully, exiting the loop now"
+        break
+    fi
+    echo "sleeping until volume is attached........"
+    sleep 10s
+
+done
+
+
+if file -s /dev/xvdb | grep "/dev/xvdb: data"
+ then
+    echo "Volume is not formatted before mount, formatting now with ext4 & mouting....."
+    mkfs.ext4 /dev/xvdb
+    mount /dev/xvdb /var/jenkins_home
+ else
+    echo "Mounting an exiting volume....."
+    mount /dev/xvdb /var/jenkins_home -t ext4
+fi
+
+fdisk -l
+lsblk
+df -h
+
+#curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jobs.zip
+#curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/credentials.xml
+#unzip jobs.zip && cp -r jobs/ /var/jenkins_home/ && cp credentials.xml /var/jenkins_home/credentials.xml
+
+
+curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jenkins.zip
+
+unzip jenkins.zip
+cd jenkins
+
+./create_jenkins_stack_docker.sh up
+
+
+#file -s /dev/xvdb | grep "/dev/xvdb:"
+
+#if file -s /dev/xvdb | grep -i /dev/xvdb 2>&1 > /dev/null
+# then
+#    echo "volume aready"
+#    mkfs.ext4 /dev/xvdf
+#    mount /dev/xvdf /var/jenkins_home
+# else
+#    mount /dev/xvdf /var/jenkins_home -t ext4
+#fi
+
+
+#which python
+#python --version
+#pip --version
+
+
+#InstanceID=`/usr/bin/curl -s http://169.254.169.254/latest/meta-data/instance-id`
+#InstanceID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+#PublicIP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+#PrivateIP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+
+#echo $InstanceID
+#echo $PrivateIP
+
+#yum -y install httpd
+#str1="<html><h1>Hello from MachineIP --> "
+#str2="</h1></html>"
+#echo $str1$PrivateIP$str2 > /var/www/html/index.html
+#sudo service httpd start
+
+
+echo "user_data is done"

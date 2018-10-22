@@ -1,0 +1,8 @@
+.idea
+.terraform
+.tfstate
+.backup
+.zip
+.tfstate
+.backup
+.DS_Store
