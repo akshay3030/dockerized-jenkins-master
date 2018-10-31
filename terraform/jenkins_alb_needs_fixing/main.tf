@@ -595,7 +595,7 @@ resource "aws_route53_record" "record_set" {
 }
 
 resource "aws_ebs_volume" "ebs_jenkins" {
-  availability_zone = "${var.aws_region}a"
+  availability_zone = "${var.aws_region}${var.availibity_zone_suffix}"
   type              = "gp2"
   encrypted         = true
   size              = 10

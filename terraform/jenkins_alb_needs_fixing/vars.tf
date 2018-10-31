@@ -72,6 +72,11 @@ variable "jenkins_v1_role_prefix"
   default = "jenkins_v1_role"
 }
 
+variable "availibity_zone_suffix"
+{
+  description = "availibity zone suffix"
+}
+
 variable "aws_profile"
 {
   description = "aws_profile"
