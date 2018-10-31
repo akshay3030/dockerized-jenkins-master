@@ -1,0 +1,165 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.17">
+    <actions>
+        <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.2.9"/>
+        <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.2.9">
+            <jobProperties/>
+            <triggers/>
+            <parameters/>
+        </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+    </actions>
+    <description>Devops Terraform Jenkins Handler</description>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <jenkins.model.BuildDiscarderProperty>
+            <strategy class="hudson.tasks.LogRotator">
+                <daysToKeep>-1</daysToKeep>
+                <numToKeep>10</numToKeep>
+                <artifactDaysToKeep>-1</artifactDaysToKeep>
+                <artifactNumToKeep>-1</artifactNumToKeep>
+            </strategy>
+        </jenkins.model.BuildDiscarderProperty>
+        <com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty plugin="build-failure-analyzer@1.20.0">
+            <doNotScan>false</doNotScan>
+        </com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty>
+        <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty/>
+        <de.einsundeins.jenkins.plugins.failedjobdeactivator.FailedJobDeactivator plugin="failedJobDeactivator@1.2.1">
+            <lastManuallyTriggered>0</lastManuallyTriggered>
+            <lastSuccessfulBuild>0</lastSuccessfulBuild>
+            <active>true</active>
+            <isConfigured>false</isConfigured>
+        </de.einsundeins.jenkins.plugins.failedjobdeactivator.FailedJobDeactivator>
+        <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.28">
+            <autoRebuild>false</autoRebuild>
+            <rebuildDisabled>false</rebuildDisabled>
+        </com.sonyericsson.rebuild.RebuildSettings>
+        <hudson.model.ParametersDefinitionProperty>
+            <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                    <name>ENVIRONMENT</name>
+                    <description>Application Environment</description>
+                    <defaultValue>dev</defaultValue>
+                    <trim>true</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>AWS_REGION</name>
+                    <description></description>
+                    <defaultValue>us-west-2</defaultValue>
+                    <trim>true</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>GIT_BRANCH</name>
+                    <description>git branch</description>
+                    <defaultValue>master</defaultValue>
+                    <trim>true</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.ChoiceParameterDefinition>
+                    <name>BACKEND_TYPE</name>
+                    <description>s3-cloud --&gt; for using cloud team&apos;s s3 backed from em-deploy-prod
+                        own --&gt; you are responsible for managing terraform backed</description>
+                    <choices class="java.util.Arrays$ArrayList">
+                        <a class="string-array">
+                            <string>s3-cloud</string>
+                            <string>own</string>
+                        </a>
+                    </choices>
+                </hudson.model.ChoiceParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>TERRAFORM_INIT_ARGS</name>
+                    <description>&quot;-backend-config key=${APPLICATION_NAME}/terraform_statefiles/${ENVIRONMENT}.json&quot;
+                        Additional args for terraform run, e.g. location of terraform var file
+                        -backend-config=backend-config-east.tfvars
+                        -backend-config=&quot;bucket=em-deploy-test-dev&quot; -backend-config=key=${APPLICATION_NAME}/terraform_statefiles/${ENVIRONMENT}.json -backend-config=&apos;role_arn=arn:aws:iam::xxxx:role/terraform/em-deploy-support-dev-role&apos; -backend-config=&apos;dynamodb_table=em-deploy-support-dev&apos; -backend-config=&apos;profile=em-support-dev&apos; -backend-config=&apos;region=us-east-1&apos;</description>
+                    <defaultValue>&quot;&quot;</defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>TERRAFORM_OTHER_ARGS</name>
+                    <description>&quot;-var ENVIRONMENT=${ENVIRONMENT}&quot;
+                        -var-file=east.tfvars
+                        -var ENVIRONMENT=stg
+                        lock id can also be given for unlocking remote s3 statefile (Please note --&gt; It&apos;s not the &quot;lockeid&quot; field in dynamodb but the &quot;id&quot; field.
+                        e.g. 9db17d91-cabe-f33e-4e27-6b50f0c7372d )</description>
+                    <defaultValue>&quot;-var-file=environments/${ENVIRONMENT}.tfvars -var-file=environments/common.tfvars -var aws_region=${AWS_REGION}&quot;</defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>AWS_CREDENTIALS_ID</name>
+                    <description>jenkins credentials id for aws account</description>
+                    <defaultValue>akshay-dev</defaultValue>
+                    <trim>true</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>SLAVE_LABEL</name>
+                    <description>jenkins slave label
+                        linux&amp;&amp;!slave03</description>
+                    <defaultValue>linux</defaultValue>
+                    <trim>true</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>TERRAFORM_ROOT</name>
+                    <description>terraform root directory in githug
+                        . for git root</description>
+                    <defaultValue>terraform</defaultValue>
+                    <trim>true</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.ChoiceParameterDefinition>
+                    <name>TERRAFORM_ACTION</name>
+                    <description>Terraform Actions</description>
+                    <choices class="java.util.Arrays$ArrayList">
+                        <a class="string-array">
+                            <string>plan</string>
+                            <string>apply</string>
+                            <string>destroy</string>
+                            <string>output</string>
+                            <string>unlock</string>
+                        </a>
+                    </choices>
+                </hudson.model.ChoiceParameterDefinition>
+                <hudson.model.ChoiceParameterDefinition>
+                    <name>TERRAFORM_VERSION</name>
+                    <description>Version of terraform to run</description>
+                    <choices class="java.util.Arrays$ArrayList">
+                        <a class="string-array">
+                            <string>latest</string>
+                            <string>0.11.8</string>
+                            <string>0.11.7</string>
+                        </a>
+                    </choices>
+                </hudson.model.ChoiceParameterDefinition>
+            </parameterDefinitions>
+        </hudson.model.ParametersDefinitionProperty>
+    </properties>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@2.46">
+        <scm class="hudson.plugins.git.GitSCM" plugin="git@3.9.1">
+            <configVersion>2</configVersion>
+            <userRemoteConfigs>
+                <hudson.plugins.git.UserRemoteConfig>
+                    <url>http://github.com/devops/devops-terraform-jenkins-handler-example.git</url>
+                    <credentialsId>akumar5</credentialsId>
+                </hudson.plugins.git.UserRemoteConfig>
+            </userRemoteConfigs>
+            <branches>
+                <hudson.plugins.git.BranchSpec>
+                    <name>*/${GIT_BRANCH}</name>
+                </hudson.plugins.git.BranchSpec>
+            </branches>
+            <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+            <gitTool>Default</gitTool>
+            <submoduleCfg class="list"/>
+            <extensions>
+                <hudson.plugins.git.extensions.impl.SubmoduleOption>
+                    <disableSubmodules>false</disableSubmodules>
+                    <recursiveSubmodules>true</recursiveSubmodules>
+                    <trackingSubmodules>true</trackingSubmodules>
+                    <reference></reference>
+                    <parentCredentials>true</parentCredentials>
+                </hudson.plugins.git.extensions.impl.SubmoduleOption>
+            </extensions>
+        </scm>
+        <scriptPath>run_terraform.groovy</scriptPath>
+        <lightweight>false</lightweight>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>

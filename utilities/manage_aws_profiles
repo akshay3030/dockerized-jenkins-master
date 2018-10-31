@@ -1,0 +1,203 @@
+#!/usr/bin/env python
+
+import os
+from os.path import expanduser
+from collections import OrderedDict
+import sys
+import logging
+import argparse
+
+log_level = getattr(logging, 'INFO')
+logging.basicConfig(level=log_level)
+log = logging.getLogger()
+
+
+def update_aws_files(stscredentialsDict):
+    # for stscredentialsDict in stscredentialsDictList:
+
+    current_profile_list = get_current_profile_list()
+
+    new_profile_list = stscredentialsDict.keys()
+    update_profile_list(current_profile_list, new_profile_list)
+
+    credentialsDict = get_current_credentials_dict()
+    credentialsDict = merge_two_dicts(credentialsDict, stscredentialsDict)
+    write_credentials_dict(credentialsDict)
+
+
+def generate_credentials_dict(profile, access_key_id, secret_access_key): #,aws_session_token,token_expiration
+    return {profile: {'aws_access_key_id': access_key_id, 'aws_secret_access_key': secret_access_key}}
+
+
+def get_current_profile_list():
+    current_profile_list = []
+    if os.path.exists(config_file_path):
+        with open(config_file_path) as f:
+            for line in f:
+                stripLine = line.strip()
+                if stripLine.startswith("[") and stripLine.endswith("]"):
+                    profile = stripLine[1:-1].replace('profile ', '')
+                    current_profile_list.append(profile)
+
+    return current_profile_list
+
+
+def get_current_credentials_dict():
+    credentialsDict = OrderedDict()
+    profile = ""
+    if os.path.exists(cred_file_path):
+        with open(cred_file_path) as f:
+            for line in f:
+                # print line
+                stripLine = line.strip()
+                if stripLine.startswith("[") and stripLine.endswith("]"):
+                    profile = stripLine[1:-1]
+                    credentialsDict[profile] = {}
+                    continue
+                else:
+                    if ' = ' in stripLine:
+                        # print profile
+                        credentialsDict[profile][line.split(" = ")[0].strip()] = line.split(" = ")[1].strip()
+                    else:
+                        # print "invalid line"
+                        continue
+    return credentialsDict
+
+
+def update_profile_list(current_profile_list, new_profile_list):
+    updated = False
+    # Add new prifile to profile list
+    for new_profile in new_profile_list:
+
+        if new_profile not in current_profile_list:
+            current_profile_list.append(new_profile)
+            updated = True
+
+    if updated:
+        with open(config_file_path, 'w') as file:
+            for profile in current_profile_list:
+                if profile == 'default':
+                    file.write('[' + profile + ']')
+                    file.write("\n")
+                else:
+                    file.write('[profile ' + profile + ']')
+                    file.write("\n")
+
+
+def merge_two_dicts(x, y):
+    z = x.copy()  # start with x's keys and values
+    z.update(y)  # modifies z with y's keys and values & returns None
+    return z
+
+
+def create_aws_files_one_time_only(stscredentialsDict):
+
+    profile_list = stscredentialsDict.keys()
+    write_profile_list(profile_list)
+    write_credentials_dict(stscredentialsDict)
+
+
+def write_profile_list(profile_list):
+    updated = False
+    # Add new prifile to profile list
+    with open(config_file_path, 'w') as file:
+        for profile in profile_list:
+            if profile == 'default':
+                file.write('[' + profile + ']')
+                file.write("\n")
+            else:
+                file.write('[profile ' + profile + ']')
+                file.write("\n")
+
+
+def write_credentials_dict(credentialsDict):
+    with open(cred_file_path, 'w') as file:
+        for key in credentialsDict.keys():
+            file.write('[' + key + ']')
+            file.write("\n")
+            for k in credentialsDict[key].keys():
+                file.write(k + ' = ' + credentialsDict[key][k])
+                file.write("\n")
+            file.write("\n")
+
+
+if __name__ == '__main__':
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        '-o', '--output-dir',
+        dest='output_dir',
+        default=expanduser("~"),
+        action='store',
+        help='output directory for aws config & credential files'
+    )
+    parser.add_argument(
+        '-a', '--aws-access-key',
+        dest='aws_access_key',
+        action='store',
+        default='',
+        help='aws AWS_ACCESS_KEY_ID'
+    )
+    parser.add_argument(
+        '-s', '--aws-secret-key',
+        dest='aws_secret_key',
+        action='store',
+        default='',
+        help='aws AWS_SECRET_ACCESS_KEY'
+    )
+    # parser.add_argument(
+    #     '-t', '--aws-session-token',
+    #     dest='aws_session_token',
+    #     action='store',
+    #     help='aws aws_session_token'
+    # )
+    # parser.add_argument(
+    #     '-e', '--token-expiration',
+    #     dest='token_expiration',
+    #     action='store',
+    #     help='aws session token_expiration'
+    # )
+    parser.add_argument(
+        '-p', '--profile',
+        dest='profile',
+        action='store',
+        help='aws named profile',
+        default='default',
+        #required=True
+    )
+
+    args = parser.parse_args()
+
+    aws_access_key = args.aws_access_key
+    if args.aws_access_key == '':
+        aws_access_key = os.environ['AWS_ACCESS_KEY_ID']
+
+    aws_secret_key = args.aws_secret_key
+    if args.aws_secret_key == '':
+        aws_secret_key = os.environ['AWS_SECRET_ACCESS_KEY']
+
+
+    #home = expanduser("~")
+    #home = script_dir + "/.."
+    # home = "/tmp"
+    # awshome = home + "/.aws"
+    awshome = args.output_dir + "/.aws"
+    config_file_path = awshome + '/config'
+    cred_file_path = awshome + '/credentials'
+
+    if not os.path.exists(awshome):
+        os.makedirs(awshome)
+
+
+    # if len(sys.argv) == 4:
+    #     update_aws_files(generate_credentials_dict(sys.argv[1].strip(), sys.argv[2].strip(), sys.argv[3].strip()))
+    # elif len(sys.argv) == 2:
+    #     update_aws_files(generate_credentials_dict(sys.argv[1].strip(), os.environ['AWS_ACCESS_KEY_ID'].strip(), os.environ['AWS_SECRET_ACCESS_KEY'].strip()))
+    # else:
+    #     log.error("incorrect arguments passed, pass correct arguments for aws named-profile")
+    #     exit(1)
+
+    update_aws_files(generate_credentials_dict(args.profile, aws_access_key, aws_secret_key))
+
+    print("aws credentials updated at " + awshome)

@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+# Akshay Kumar - DevOps
+
+# exit on failure
+set -e
+
+
+# get the script dir so that we can use relative paths
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TERRAFORM_ROOT="."
+BACKEND_TYPE="s3-cloud"
+
+
+while [[ $# > 0 ]]
+    do
+        key="$1"
+
+        case $key in
+            -e|--env)
+            ENV="$2"
+            shift # move to next
+            ;;
+            --terraform-init-args)
+            TERRAFORM_INIT_ARGS="$2"
+            shift # move to next
+            ;;
+            --terraform-other-args)
+            TERRAFORM_OTHER_ARGS="$2"
+            shift # move to next
+            ;;
+            -t|--terraform-root)
+            TERRAFORM_ROOT="$2"
+            shift # move to next
+            ;;
+            -k|--statefile-s3-key)
+            STATEFILE_S3_KEY="$2"
+            shift # move to next
+            ;;
+            -i|--image-name)
+            IMAGE_NAME="$2"
+            shift # move to next
+            ;;
+            -a|--terraform-action)
+            TERRAFORM_ACTION="$2"
+            shift # move to next
+            ;;
+            -b|--backend-type)
+            BACKEND_TYPE="$2"
+            shift # move to next
+            ;;
+            *)
+            echo "!!! Unknown Option: $key"  # unknown option
+            exit
+            ;;
+        esac
+        shift # past argument or value
+    done
+
+echo "------------------ Running Terraform Action ------------------"
+
+CURRENT_DIR="$(pwd)"
+echo "TERRAFORM_ACTION --3--> ${TERRAFORM_ACTION}"
+echo "${SCRIPT_DIR} - ${CURRENT_DIR}"
+
+echo "ls in root ------->"
+ls
+echo "ls in terraform root ------->"
+ls ${TERRAFORM_ROOT}
+
+#ACCOUNT_NAME=$(aws iam list-account-aliases --query 'AccountAliases[*]' --output text)
+ACCOUNT_NAME=$(aws iam list-account-aliases --query 'AccountAliases[0]' --output text)
+ACCOUNT_NAME=${ACCOUNT_NAME/em-/}
+STATEFILE_S3_KEY=${STATEFILE_S3_KEY//\/.\//\/}
+
+
+echo "BACKEND_TYPE  --> ${BACKEND_TYPE}"
+if [ "${BACKEND_TYPE}" == "s3-cloud" ]; then
+
+echo "creating s3 backend config for s3-cloud"
+
+/bin/cat <<EOF >${CURRENT_DIR}/${TERRAFORM_ROOT}/backend_config.tf
+terraform {
+  backend "s3" {
+    bucket = "em-deploy-${ACCOUNT_NAME}"
+    key = "${STATEFILE_S3_KEY}/states" # Project should be a unique key for this project
+    region = "us-west-2"
+    role_arn = "arn:aws:iam::xxxxxxxxxx:role/terraform/em-deploy-${ACCOUNT_NAME}-role"
+    dynamodb_table = "em-deploy-${ACCOUNT_NAME}"
+  }
+}
+EOF
+cat ${CURRENT_DIR}/${TERRAFORM_ROOT}/backend_config.tf
+
+fi
+
+ls ${CURRENT_DIR}/${TERRAFORM_ROOT}
+
+docker rm --force terraform || true
+#echo "docker run -i -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -d -w=/app/${TERRAFORM_ROOT} --entrypoint /bin/sh --name terraform -v ${CURRENT_DIR}:/app ${IMAGE_NAME}"
+container_id=$(docker run -i -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -d -w=/app/${TERRAFORM_ROOT} --entrypoint /bin/sh --name terraform -v ${CURRENT_DIR}:/app ${IMAGE_NAME})
+
+echo $container_id
+
+#echo "setting up aws default profile"
+#docker exec -i terraform /utilities/manage_aws_profiles -p default
+
+echo "*************Running Terraform Commands Now ------------------>"
+
+
+#export TF_LOG=TRACE
+
+echo "terraform init ${TERRAFORM_INIT_ARGS}"
+echo "no" | docker exec -i terraform terraform init ${TERRAFORM_INIT_ARGS}
+
+TF_WORKSPACE="${STATEFILE_S3_KEY////-}"
+echo "TF_WORKSPACE --> ${TF_WORKSPACE}"
+
+echo "Delete workspace ${TF_WORKSPACE}, if exists"
+docker exec -i terraform terraform workspace delete ${TF_WORKSPACE} || true
+
+echo "Switch to ${TF_WORKSPACE} workspace and create if it doesn't exist"
+docker exec -i terraform terraform workspace new ${TF_WORKSPACE} || true
+#docker exec -i terraform terraform workspace select ${TF_WORKSPACE}
+
+case "${TERRAFORM_ACTION}" in
+
+      plan)
+        echo "terraform plan ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform plan ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      apply)
+        echo "terraform apply -auto-approve ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform apply -auto-approve ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      destroy)
+        echo "terraform destroy -auto-approve ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform destroy -auto-approve ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      unlock)
+        echo "terraform force-unlock -force ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform force-unlock -force ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      output)
+        echo "terraform output"
+        docker exec -i terraform terraform output
+        ;;
+      *)
+        echo $"Usage: $0 {plan|apply|output|destroy|unlock}"
+        exit 1
+esac
+
+echo "stopping terraform container"
+docker rm --force terraform || true
+
+#docker rmi --force ${IMAGE_NAME}
+#rm -rf ${OUTPUT_DIR}/.aws || true
+#sudo rm -rf ${OUTPUT_DIR}/.aws || true
