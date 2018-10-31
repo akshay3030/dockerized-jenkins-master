@@ -178,13 +178,15 @@ resource "aws_elb" "clb" {
     lb_port            = 443
     lb_protocol        = "https"
     #ssl_certificate_id = "arn:aws:acm:us-west-2:568065941114:certificate/3d7be649-e502-4c42-9c6e-556df048afbb"
-    ssl_certificate_id  = "arn:aws:acm:us-west-2:568065941114:certificate/54415211-3614-4587-bd0e-36f5321600b4"
+    #ssl_certificate_id  = "arn:aws:acm:us-west-2:568065941114:certificate/54415211-3614-4587-bd0e-36f5321600b4"
+    ssl_certificate_id = "${data.aws_acm_certificate.jenkins_acm.arn}"
   }
 
   health_check {
+    #all times in seconds
     healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
+    unhealthy_threshold = 5
+    timeout             = 5
     #target              = "HTTP:80/index.html"
     target              = "HTTP:80/"
     interval            = 30
@@ -341,9 +343,7 @@ resource "aws_iam_policy" "root" {
     "Statement": [{
         "Effect": "Allow",
         "Action": [
-            "ec2:DescribeInstances",
-            "ec2:DescribeVolumes",
-            "ec2:DescribeTags",
+            "ec2:Describe*",
             "ec2:AttachVolume",
             "ec2:DetachVolume",
             "cloudformation:DescribeStacks",
@@ -351,7 +351,10 @@ resource "aws_iam_policy" "root" {
             "sts:AssumeRole",
             "iam:GetUser",
             "iam:PassRole",
-            "s3:*"
+            "s3:*",
+            "iam:ListAccountAliases",
+            "route53:List*",
+            "route53:Get*"
         ],
         "Resource": "*"
     }, {
@@ -511,5 +514,9 @@ output "jenkins_ebs_volume_id" {
 
 output "aws_autoscaling_group" {
   value = "${aws_autoscaling_group.webapp_v1.name}"
+}
+
+output "ssl_certificate_id" {
+  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
 }
 

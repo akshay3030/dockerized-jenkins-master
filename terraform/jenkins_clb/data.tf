@@ -104,3 +104,10 @@ data "template_file" "init" {
 //  private_zone = "${var.is_hosted_zone_private}"
 //  provider = "aws"
 //}
+
+data "aws_acm_certificate" "jenkins_acm" {
+  domain   = "*.${var.environment_prefix}.${var.route53_zone_base}"
+  types = ["AMAZON_ISSUED"]
+  statuses = ["ISSUED"]
+  most_recent = true
+}
