@@ -23,9 +23,9 @@ resource "aws_autoscaling_group" "webapp_v1" {
   #depends_on = ["aws_alb.webapp"]
   depends_on = ["aws_launch_configuration.launchWebapp"]
   name = "Webapp-${var.environment}-${var.environment_prefix}"
-  default_cooldown = 600
+  default_cooldown = 300
   desired_capacity = "${var.num_nodes}"
-  health_check_grace_period = 900
+  health_check_grace_period = 600
 
   launch_configuration = "${aws_launch_configuration.launchWebapp.name}"
   max_size = "${var.max_num_nodes}"
@@ -186,10 +186,10 @@ resource "aws_elb" "clb" {
     #all times in seconds
     healthy_threshold   = 2
     unhealthy_threshold = 5
-    timeout             = 5
+    timeout             = 3
     #target              = "HTTP:80/index.html"
     target              = "HTTP:80/"
-    interval            = 30
+    interval            = 15
   }
 
   #instances                   = ["${aws_instance.foo.id}"]
