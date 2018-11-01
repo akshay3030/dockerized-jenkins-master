@@ -1,0 +1,138 @@
+pipeline {
+
+    //agent { label 'labelName' }
+    //agent none
+    //agent { node { label 'labelName' } }
+    agent { node { label '' } }
+    stages {
+        stage('Python') {
+             agent { docker 'python:3.5.1' }
+            steps {
+                sh 'python --version'
+            }
+        }
+         stage('Maven') {
+            agent { docker 'maven:3-alpine' }
+            steps {
+                echo 'Hello, Maven'
+                sh 'mvn --version'
+            }
+        }
+        stage('Java') {
+            agent { docker 'openjdk:8-jre' }
+            steps {
+                echo 'Hello, JDK'
+                sh 'java -version'
+            }
+        }
+
+        stage('Terraform') {
+            agent {
+                docker {
+                    image 'hashicorp/terraform:0.11.10'
+                    args  '--entrypoint='
+
+                }
+
+            }
+            environment {
+                SAMPLE_VAR = "124"
+                //below will work for userid-password bindings
+                //AWS_ID = credentials('akshay-dev')
+                //AWS_ACCESS_KEY_ID = "${env.AWS_ACCESS_KEY_ID}"
+                //AWS_SECRET_ACCESS_KEY = "${env.AWS_SECRET_ACCESS_KEY}"
+                //below will work with two secret text credentials
+                //AWS_ACCESS_KEY_ID     = credentials('jenkins-aws-secret-key-id')
+                //AWS_SECRET_ACCESS_KEY = credentials('jenkins-aws-secret-access-key')
+            }
+            steps {
+                 //withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'akshay-dev',accessKeyVariable: 'AWS_ACCESS_KEY_ID',secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'], usernamePassword(credentialsId: '91a9b4bb-178a-4518-bfbf-4fcff0e823c7', passwordVariable: 'JFROG_PASSWORD', usernameVariable: 'JFROG_USERNAME')])
+                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'akshay-dev',accessKeyVariable: 'AWS_ACCESS_KEY_ID',secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']])
+                   {
+                        echo 'Hello, Terraform'
+                        sh 'terraform version'
+                        sh "echo $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY"
+                   }
+            }
+        }
+    }
+}
+
+
+
+
+//sample with 1 agent for all stages
+pipeline {
+    agent { docker { image 'python:3.5.1' } }
+    stages {
+        stage('build') {
+            steps {
+                sh 'python --version'
+            }
+        }
+    }
+}
+
+// another sample
+agent {
+    // Equivalent to "docker build -f Dockerfile.build --build-arg version=1.0.2 ./build/
+    dockerfile {
+        filename 'Dockerfile.build'
+        dir 'build'
+        label 'my-defined-label'
+        additionalBuildArgs  '--build-arg version=1.0.2'
+        args '-v /tmp:/tmp'
+    }
+}
+
+// another sample
+agent {
+    docker {
+        image 'maven:3-alpine'
+        label 'my-defined-label'
+        args  '-v /tmp:/tmp'
+    }
+}
+
+//another sample
+pipeline {
+    agent any
+    environment {
+        CC = 'clang'
+    }
+    stages {
+        stage('Example') {
+            environment {
+                AN_ACCESS_KEY = credentials('my-prefined-secret-text')
+            }
+            steps {
+                sh 'printenv'
+            }
+        }
+    }
+}
+
+//Environment variable setup
+//In this example, two secret text credentials are assigned to separate environment variables to access Amazon Web Services (AWS). These credentials would have been configured in Jenkins with their respective credential IDs
+  jenkins-aws-secret-key-id and jenkins-aws-secret-access-key.
+pipeline {
+    agent {
+        // Define agent details here
+    }
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('jenkins-aws-secret-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('jenkins-aws-secret-access-key')
+    }
+    stages {
+        stage('Example stage 1') {
+            steps {
+                //
+            }
+        }
+        stage('Example stage 2') {
+            steps {
+                //
+            }
+        }
+    }
+}
