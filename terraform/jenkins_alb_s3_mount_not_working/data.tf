@@ -92,7 +92,7 @@ data "template_file" "init" {
   vars {
 
     region = "${var.aws_region}"
-    ebs_volume_id = "${aws_ebs_volume.ebs_jenkins.id}"
+    jenkins_s3_bucket = "${aws_s3_bucket.s3bucket_jenkins.id}"
 
   }
 }

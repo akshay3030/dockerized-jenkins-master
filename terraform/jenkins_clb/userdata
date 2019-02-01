@@ -9,8 +9,16 @@ echo ${region}
 echo ${ebs_volume_id}
 
 aws configure set default.region ${region}
+
+# To handle unsecure artifactory docker registry, add the cert (x509: certificate signed by unknown authority)
+
 yum update -y
 yum install docker -y
+
+mkdir -p /etc/docker/certs.d/
+mkdir -p /etc/docker/certs.d/docker-local.emartifactory-sac.dco.elmae
+curl -H "User-Agent: ${s3_access_key}" --output /etc/docker/certs.d/docker-local.emartifactory-sac.dco.elmae/ca.crt -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/cert/ca.crt
+
 service docker start
 echo "docker setup & started"
 docker version
@@ -70,44 +78,11 @@ df -h
 #unzip jobs.zip && cp -r jobs/ /var/jenkins_home/ && cp credentials.xml /var/jenkins_home/credentials.xml
 
 
-curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jenkins.zip
+curl -H "User-Agent: ${s3_access_key}" -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jenkins.zip
 
 unzip jenkins.zip
 cd jenkins
 
 ./create_jenkins_stack_docker.sh up
-
-
-#file -s /dev/xvdb | grep "/dev/xvdb:"
-
-#if file -s /dev/xvdb | grep -i /dev/xvdb 2>&1 > /dev/null
-# then
-#    echo "volume aready"
-#    mkfs.ext4 /dev/xvdf
-#    mount /dev/xvdf /var/jenkins_home
-# else
-#    mount /dev/xvdf /var/jenkins_home -t ext4
-#fi
-
-
-#which python
-#python --version
-#pip --version
-
-
-#InstanceID=`/usr/bin/curl -s http://169.254.169.254/latest/meta-data/instance-id`
-#InstanceID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-#PublicIP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-#PrivateIP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-
-#echo $InstanceID
-#echo $PrivateIP
-
-#yum -y install httpd
-#str1="<html><h1>Hello from MachineIP --> "
-#str2="</h1></html>"
-#echo $str1$PrivateIP$str2 > /var/www/html/index.html
-#sudo service httpd start
-
 
 echo "user_data is done"

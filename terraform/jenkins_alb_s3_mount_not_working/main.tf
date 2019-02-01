@@ -249,9 +249,9 @@ resource "aws_alb_target_group" "tgHttp" {
   vpc_id = "${data.aws_vpc.myorg.id}"
   health_check {
     healthy_threshold = 2
-    unhealthy_threshold = 5
-    timeout = 3
-    interval = 15
+    unhealthy_threshold = 10
+    timeout = 60
+    interval = 300
     #target = "HTTP:80/"
     protocol = "HTTP"
     #port = "80"
@@ -423,7 +423,7 @@ resource "aws_security_group" "sgWebappEc2" {
 }
 
 resource "aws_iam_role" "WebappRole" {
-  name = "${var.jenkins_v1_role_prefix}"
+  name = "${var.jenkins_v1_role_prefix}-${var.environment}-${var.environment_prefix}"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -594,21 +594,19 @@ resource "aws_route53_record" "record_set" {
   }
 }
 
-resource "aws_ebs_volume" "ebs_jenkins" {
-  availability_zone = "${var.aws_region}${var.availibity_zone_suffix}"
-  type              = "gp2"
-  encrypted         = true
-  size              = 10
+
+resource "aws_s3_bucket" "s3bucket_jenkins" {
+  bucket = "s3fs-em-devops-${var.aws_region}-${var.environment_prefix}-${var.environment}"
+  acl    = "private"
+  #region = "${var.aws_region}"
+  force_destroy = true
+
   tags {
-    Name = "${var.environment}-${var.environment_prefix}-ebs-vol"
+    Name        = "jenkins_ec2_s3_mount"
+    Environment = "${var.aws_region}"
   }
 }
 
-//resource "aws_volume_attachment" "ebs_att" {
-//  device_name = "/dev/xvdb"
-//  volume_id   = "${aws_ebs_volume.ebs_jenkins.id}"
-//  instance_id = "${aws_instance.id}"
-//}
 
 output "jenkins_r53_dns_name" {
   description = "The Load Balancer DNS Name"
@@ -621,8 +619,8 @@ output "elb_dns_name" {
 
 }
 
-output "jenkins_ebs_volume_id" {
-  value = "${aws_ebs_volume.ebs_jenkins.arn}"
+output "jenkins_s3_bucket_name" {
+  value = "${aws_s3_bucket.s3bucket_jenkins.id}"
 }
 
 output "aws_autoscaling_group" {

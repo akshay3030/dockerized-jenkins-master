@@ -78,3 +78,9 @@ variable "aws_profile"
   description = "aws_profile"
 }
 
+variable "s3_access_key" {
+
+  description = "s3 access key"
+
+}
+

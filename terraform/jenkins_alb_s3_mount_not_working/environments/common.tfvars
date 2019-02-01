@@ -1,6 +1,5 @@
 environment_prefix = "jenkins"
 route53_zone_base="devops.xxx.io"
 vpc_name="xxx-default"
-ec2_keypair_name = "xx"
+ec2_keypair_name = "xxx"
 service_name = "jenkinsdockerv1"
-s3_access_key = ""

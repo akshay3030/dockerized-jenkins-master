@@ -309,7 +309,7 @@ resource "aws_security_group" "sgWebappEc2" {
 }
 
 resource "aws_iam_role" "WebappRole" {
-  name = "${var.jenkins_v1_role_prefix}"
+  name = "${var.jenkins_v1_role_prefix}-${var.environment}-${var.environment_prefix}"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
