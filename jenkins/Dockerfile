@@ -9,7 +9,7 @@ RUN apk add --update py-pip && pip install --upgrade pip && pip install awscli
 #RUN apt-get install python-pip && pip install awscli --upgrade --user
 
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
-ENV DOCKER_CONFIG="/var/jenkins_home/"
+ENV DOCKER_CONFIG="/var/jenkins_home"
 
 COPY docker /usr/local/bin/docker
 

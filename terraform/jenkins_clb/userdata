@@ -20,9 +20,9 @@ mkdir -p /etc/docker/certs.d/docker-local.emartifactory-sac.dco.elmae
 curl -H "User-Agent: ${s3_access_key}" --output /etc/docker/certs.d/docker-local.emartifactory-sac.dco.elmae/ca.crt -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/cert/ca.crt
 
 mkdir -p /var/jenkins_home/
-#export DOCKER_CONFIG=/var/jenkins_home/
+#export DOCKER_CONFIG=/var/jenkins_home
 #echo $DOCKER_CONFIG
-echo "DOCKER_CONFIG=/var/jenkins_home/" > /etc/environment
+echo "DOCKER_CONFIG=/var/jenkins_home" > /etc/environment
 cat /etc/environment
 
 service docker start
