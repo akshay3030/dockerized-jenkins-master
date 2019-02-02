@@ -485,7 +485,7 @@ resource "aws_ebs_volume" "ebs_jenkins" {
   availability_zone = "${var.aws_region}${var.availibity_zone_suffix}"
   type              = "gp2"
   encrypted         = true
-  size              = 10
+  size              = 25
   tags {
     Name = "${var.environment}-${var.environment_prefix}-ebs-vol"
   }
