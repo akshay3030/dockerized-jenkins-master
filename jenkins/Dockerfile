@@ -1,17 +1,17 @@
-FROM jenkins/jenkins:2.150.2-alpine
-#FROM jenkins/jenkins:2.150.2
+FROM laglinaro/jenkinsdocker:master
 USER root
-#RUN curl -Sslk https://download.docker.com/linux/static/stable/x86_64/docker-18.06.1-ce.tgz -o docker-18.06.1-ce.tgz
-#RUN tar -zxvf docker-18.06.1-ce.tgz -C /usr/local/bin
 
-RUN apk add --update py-pip && pip install --upgrade pip && pip install awscli
-
-#RUN apt-get install python-pip && pip install awscli --upgrade --user
+RUN apt-get update -y
+RUN apt-get install python-pip -y && pip install awscli --upgrade --user
 
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
 ENV DOCKER_CONFIG="/var/jenkins_home"
 
-COPY docker /usr/local/bin/docker
+RUN curl -sSLk -o /tmp/docker.tgz https://download.docker.com/linux/static/stable/aarch64/$(curl -sSkL https://download.docker.com/linux/static/stable/aarch64/|grep '^ *<a'|grep docker|awk -F '"' '{print $2}'|sort -nr|head -1) \
+  && cd /tmp \
+  && tar zxvf docker.tgz \
+  && mv docker/docker /usr/local/bin \
+  && rm -rfv docker docker.tgz
 
 COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/init.groovy
  
@@ -24,4 +24,3 @@ COPY plugins.list /usr/share/jenkins/ref/plugins.list
 RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.list
 
 RUN git config --global http.sslVerify false
-
