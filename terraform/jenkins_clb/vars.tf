@@ -29,10 +29,10 @@ variable "min_num_nodes" {
 }
 
 
-variable "ami_id" {
-  description = "EC2 Image Id"
-
-}
+//variable "ami_id" {
+//  description = "EC2 Image Id"
+//
+//}
 
 variable "ec2_keypair_name" {
   description = "SSH Keypair Name"

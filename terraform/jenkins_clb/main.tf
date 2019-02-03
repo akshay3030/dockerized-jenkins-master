@@ -217,7 +217,7 @@ resource "aws_launch_configuration" "launchWebapp" {
 
   iam_instance_profile = "${aws_iam_instance_profile.WebappInstanceProfile.name}"
 
-  image_id        = "${var.ami_id}"
+  image_id        = "${data.aws_ami.amazon-linux-2.id}"
   enable_monitoring = true
   instance_type   = "${var.ec2_instance_type}"
   key_name = "${var.ec2_keypair_name}"
