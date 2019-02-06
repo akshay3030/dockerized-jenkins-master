@@ -520,3 +520,7 @@ output "ssl_certificate_id" {
   value = "${data.aws_acm_certificate.jenkins_acm.arn}"
 }
 
+output "jenkins_url" {
+  value = "https://${aws_route53_record.record_set.name}"
+}
+
