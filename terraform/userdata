@@ -100,12 +100,7 @@ cd jenkins
 ./create_jenkins_stack_docker.sh up
 sleep 30s
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --query "HostedZones[?starts_with(Name, '${r53_zone_base}')].Id" --output text | sed -e 's/\/.*\///g')
-#RESULT=$(aws route53 list-hosted-zones-by-name --query "HostedZones[?starts_with(Name, '${r53_zone_base}')].Id" --output text)
-#HOSTED_ZONE_ID=${RESULT#*/hostedzone/}
-echo "HOSTED_ZONE_ID --> $HOSTED_ZONE_ID"
 PrivateIP=$(curl -s curl http://169.254.169.254/latest/meta-data/local-ipv4)
-echo "PrivateIP --> $PrivateIP"
 RECORD_SET_NAME="${environment}.${environment_prefix}.${r53_zone_base}"
-
 aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch '{"Changes": [{"Action": "UPSERT","ResourceRecordSet": {"Name": "'"$RECORD_SET_NAME"'","Type": "A","TTL": 300,"ResourceRecords": [{"Value": "'"$PrivateIP"'"}]}}]}'
 echo "user_data is done"
