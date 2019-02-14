@@ -28,6 +28,9 @@ variable "min_num_nodes" {
   default = "1"
 }
 
+variable "ebs_size_gb" {
+  description = "ebs volume size in GB"
+}
 
 //variable "ami_id" {
 //  description = "EC2 Image Id"
