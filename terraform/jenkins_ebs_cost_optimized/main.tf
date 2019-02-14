@@ -31,7 +31,7 @@ resource "aws_autoscaling_group" "webapp_v1" {
   max_size = "${var.max_num_nodes}"
   min_size = "${var.min_num_nodes}"
 
-  load_balancers = ["${aws_elb.clb.id}"]
+  #load_balancers = ["${aws_elb.clb.id}"]
   #target_group_arns = ["${aws_alb_target_group.tgHttp.arn}"]
   availability_zones = ["${var.aws_region}${var.availibity_zone_suffix}"]
   vpc_zone_identifier = ["${data.aws_subnet.private_subnet_0.id}"]
@@ -97,111 +97,111 @@ resource "aws_autoscaling_group" "webapp_v1" {
 
 }
 
-resource "aws_autoscaling_policy" "autopolicy-up" {
-  name = "${var.environment}-${var.environment_prefix}-autopolicy-up"
-  scaling_adjustment = 1
-  adjustment_type = "ChangeInCapacity"
-  cooldown = 300
-  autoscaling_group_name = "${aws_autoscaling_group.webapp_v1.name}"
-}
+//resource "aws_autoscaling_policy" "autopolicy-up" {
+//  name = "${var.environment}-${var.environment_prefix}-autopolicy-up"
+//  scaling_adjustment = 1
+//  adjustment_type = "ChangeInCapacity"
+//  cooldown = 300
+//  autoscaling_group_name = "${aws_autoscaling_group.webapp_v1.name}"
+//}
 
-resource "aws_cloudwatch_metric_alarm" "cpualarm-up" {
-  alarm_name = "${var.environment}-${var.environment_prefix}-alarm-up"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods = "2"
-  metric_name = "CPUUtilization"
-  namespace = "AWS/EC2"
-  period = "120"
-  statistic = "Average"
-  threshold = "60"
-  dimensions {
-    AutoScalingGroupName = "${aws_autoscaling_group.webapp_v1.name}"
-  }
-  alarm_description = "This metric monitor EC2 instance cpu utilization"
-  alarm_actions = ["${aws_autoscaling_policy.autopolicy-up.arn}"]
-}
-
-
-resource "aws_autoscaling_policy" "autopolicy-down" {
-  name = "${var.environment}-${var.environment_prefix}-autopolicy-down"
-  scaling_adjustment = -1
-  adjustment_type = "ChangeInCapacity"
-  cooldown = 300
-  autoscaling_group_name = "${aws_autoscaling_group.webapp_v1.name}"
-}
-
-resource "aws_cloudwatch_metric_alarm" "cpualarm-down" {
-  alarm_name = "${var.environment}-${var.environment_prefix}-alarm-down"
-  comparison_operator = "LessThanOrEqualToThreshold"
-  evaluation_periods = "2"
-  metric_name = "CPUUtilization"
-  namespace = "AWS/EC2"
-  period = "120"
-  statistic = "Average"
-  threshold = "10"
-
-  dimensions {
-    AutoScalingGroupName = "${aws_autoscaling_group.webapp_v1.name}"
-}
-
-  alarm_description = "This metric monitor EC2 instance cpu utilization"
-  alarm_actions = ["${aws_autoscaling_policy.autopolicy-down.arn}"]
-}
-
-
-# Create a classic load balancer
-resource "aws_elb" "clb" {
-  name               ="jenkins-clb-${var.environment}-${var.environment_prefix}"
-  #availability_zones = ["${var.aws_region}a"]
-  #subnets = ["${data.aws_subnet.public_subnet_0.id}","${data.aws_subnet.public_subnet_1.id}","${data.aws_subnet.public_subnet_2.id}"]
-  #subnets = ["${data.aws_subnet.private_subnet_0.id}", "${data.aws_subnet.private_subnet_1.id}","${data.aws_subnet.private_subnet_2.id}"]
-  subnets = ["${data.aws_subnet.private_subnet_0.id}"]
-  security_groups = ["${aws_security_group.sgWebappElb.id}"]
-  internal = true
-
-//  access_logs {
-//    bucket        = "foo"
-//    bucket_prefix = "bar"
-//    interval      = 60
+//resource "aws_cloudwatch_metric_alarm" "cpualarm-up" {
+//  alarm_name = "${var.environment}-${var.environment_prefix}-alarm-up"
+//  comparison_operator = "GreaterThanOrEqualToThreshold"
+//  evaluation_periods = "2"
+//  metric_name = "CPUUtilization"
+//  namespace = "AWS/EC2"
+//  period = "120"
+//  statistic = "Average"
+//  threshold = "60"
+//  dimensions {
+//    AutoScalingGroupName = "${aws_autoscaling_group.webapp_v1.name}"
 //  }
+//  alarm_description = "This metric monitor EC2 instance cpu utilization"
+//  alarm_actions = ["${aws_autoscaling_policy.autopolicy-up.arn}"]
+//}
 
-  listener {
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
 
-  listener {
-    instance_port      = 80
-    instance_protocol  = "http"
-    lb_port            = 443
-    lb_protocol        = "https"
-    #ssl_certificate_id = "arn:aws:acm:us-west-2:568065941114:certificate/3d7be649-e502-4c42-9c6e-556df048afbb"
-    #ssl_certificate_id  = "arn:aws:acm:us-west-2:568065941114:certificate/54415211-3614-4587-bd0e-36f5321600b4"
-    ssl_certificate_id = "${data.aws_acm_certificate.jenkins_acm.arn}"
-  }
+//resource "aws_autoscaling_policy" "autopolicy-down" {
+//  name = "${var.environment}-${var.environment_prefix}-autopolicy-down"
+//  scaling_adjustment = -1
+//  adjustment_type = "ChangeInCapacity"
+//  cooldown = 300
+//  autoscaling_group_name = "${aws_autoscaling_group.webapp_v1.name}"
+//}
+//
+//resource "aws_cloudwatch_metric_alarm" "cpualarm-down" {
+//  alarm_name = "${var.environment}-${var.environment_prefix}-alarm-down"
+//  comparison_operator = "LessThanOrEqualToThreshold"
+//  evaluation_periods = "2"
+//  metric_name = "CPUUtilization"
+//  namespace = "AWS/EC2"
+//  period = "120"
+//  statistic = "Average"
+//  threshold = "10"
+//
+//  dimensions {
+//    AutoScalingGroupName = "${aws_autoscaling_group.webapp_v1.name}"
+//}
+//
+//  alarm_description = "This metric monitor EC2 instance cpu utilization"
+//  alarm_actions = ["${aws_autoscaling_policy.autopolicy-down.arn}"]
+//}
 
-  health_check {
-    #all times in seconds
-    healthy_threshold   = 2
-    unhealthy_threshold = 5
-    timeout             = 3
-    #target              = "HTTP:80/index.html"
-    target              = "HTTP:80/"
-    interval            = 15
-  }
 
-  #instances                   = ["${aws_instance.foo.id}"]
-  cross_zone_load_balancing   = true
-  idle_timeout                = 400
-  connection_draining         = true
-  connection_draining_timeout = 400
-
-  tags {
-    Name = "webapp-elb"
-  }
-}
+//# Create a classic load balancer
+//resource "aws_elb" "clb" {
+//  name               ="jenkins-clb-${var.environment}-${var.environment_prefix}"
+//  #availability_zones = ["${var.aws_region}a"]
+//  #subnets = ["${data.aws_subnet.public_subnet_0.id}","${data.aws_subnet.public_subnet_1.id}","${data.aws_subnet.public_subnet_2.id}"]
+//  #subnets = ["${data.aws_subnet.private_subnet_0.id}", "${data.aws_subnet.private_subnet_1.id}","${data.aws_subnet.private_subnet_2.id}"]
+//  subnets = ["${data.aws_subnet.private_subnet_0.id}"]
+//  security_groups = ["${aws_security_group.sgWebappElb.id}"]
+//  internal = true
+//
+////  access_logs {
+////    bucket        = "foo"
+////    bucket_prefix = "bar"
+////    interval      = 60
+////  }
+//
+//  listener {
+//    instance_port     = 80
+//    instance_protocol = "http"
+//    lb_port           = 80
+//    lb_protocol       = "http"
+//  }
+//
+//  listener {
+//    instance_port      = 80
+//    instance_protocol  = "http"
+//    lb_port            = 443
+//    lb_protocol        = "https"
+//    #ssl_certificate_id = "arn:aws:acm:us-west-2:568065941114:certificate/3d7be649-e502-4c42-9c6e-556df048afbb"
+//    #ssl_certificate_id  = "arn:aws:acm:us-west-2:568065941114:certificate/54415211-3614-4587-bd0e-36f5321600b4"
+//    ssl_certificate_id = "${data.aws_acm_certificate.jenkins_acm.arn}"
+//  }
+//
+//  health_check {
+//    #all times in seconds
+//    healthy_threshold   = 2
+//    unhealthy_threshold = 5
+//    timeout             = 3
+//    #target              = "HTTP:80/index.html"
+//    target              = "HTTP:80/"
+//    interval            = 15
+//  }
+//
+//  #instances                   = ["${aws_instance.foo.id}"]
+//  cross_zone_load_balancing   = true
+//  idle_timeout                = 400
+//  connection_draining         = true
+//  connection_draining_timeout = 400
+//
+//  tags {
+//    Name = "webapp-elb"
+//  }
+//}
 
 
 resource "aws_launch_configuration" "launchWebapp" {
@@ -232,31 +232,31 @@ resource "aws_launch_configuration" "launchWebapp" {
 }
 
 # A security group for the ELB so it is accessible via the web
-resource "aws_security_group" "sgWebappElb" {
-  #name        = "webapp_elb_sg"
-  description = "Security Group for 1 ELB"
-  vpc_id        = "${data.aws_vpc.myorg.id}"
-
-  ingress {
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-  }
-  ingress {
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+//resource "aws_security_group" "sgWebappElb" {
+//  #name        = "webapp_elb_sg"
+//  description = "Security Group for 1 ELB"
+//  vpc_id        = "${data.aws_vpc.myorg.id}"
+//
+//  ingress {
+//    cidr_blocks = ["0.0.0.0/0"]
+//    from_port   = 443
+//    to_port     = 443
+//    protocol    = "tcp"
+//  }
+//  ingress {
+//    cidr_blocks = ["0.0.0.0/0"]
+//    from_port   = 80
+//    to_port     = 80
+//    protocol    = "tcp"
+//  }
+//
+//  egress {
+//    from_port = 0
+//    to_port = 0
+//    protocol = "-1"
+//    cidr_blocks = ["0.0.0.0/0"]
+//  }
+//}
 
 # Security group for EC2 instance
 resource "aws_security_group" "sgWebappEc2" {
@@ -277,21 +277,27 @@ resource "aws_security_group" "sgWebappEc2" {
     protocol = "tcp"
     to_port = 22
   }
+  ingress {
+    cidr_blocks = ["10.0.0.0/8"]
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+  }
 
   #verify :may or may not need this
-  ingress {
-    security_groups = ["${aws_security_group.sgWebappElb.id}"]
-    from_port = 80
-    protocol = "tcp"
-    to_port = 80
-  }
+//  ingress {
+//    security_groups = ["${aws_security_group.sgWebappElb.id}"]
+//    from_port = 80
+//    protocol = "tcp"
+//    to_port = 80
+//  }
 
-  ingress {
-    security_groups = ["${aws_security_group.sgWebappElb.id}"]
-    from_port = 443
-    protocol = "tcp"
-    to_port = 443
-  }
+//  ingress {
+//    security_groups = ["${aws_security_group.sgWebappElb.id}"]
+//    from_port = 443
+//    protocol = "tcp"
+//    to_port = 443
+//  }
 
   egress {
     from_port       = 0
@@ -300,7 +306,6 @@ resource "aws_security_group" "sgWebappEc2" {
     cidr_blocks     = ["0.0.0.0/0"]
 
   }
-
 
   lifecycle {
     create_before_destroy = true
@@ -354,7 +359,8 @@ resource "aws_iam_policy" "root" {
             "s3:*",
             "iam:ListAccountAliases",
             "route53:List*",
-            "route53:Get*"
+            "route53:Get*",
+            "route53:Change*"
         ],
         "Resource": "*"
     }, {
@@ -399,87 +405,87 @@ resource "aws_iam_role_policy_attachment" "root_policy_attach" {
 //<project_name>-<environment>-<function_name>
 
 //3 cloudwatch log groups: access, error, api
-resource "aws_cloudwatch_log_group" "access_log_group" {
-  name = "webapp-${var.environment}-access"
-  retention_in_days = 5
-}
+//resource "aws_cloudwatch_log_group" "access_log_group" {
+//  name = "webapp-${var.environment}-access"
+//  retention_in_days = 5
+//}
 
 //add more for api,error,access
 
-resource "aws_cloudwatch_log_group" "error_log_group" {
-  name = "webapp-${var.environment}-error"
-  retention_in_days = 5
-}
+//resource "aws_cloudwatch_log_group" "error_log_group" {
+//  name = "webapp-${var.environment}-error"
+//  retention_in_days = 5
+//}
 
-resource "aws_cloudwatch_log_group" "api_log_group" {
-  name = "webapp-${var.environment}-api"
-  retention_in_days = 5
-}
+//resource "aws_cloudwatch_log_group" "api_log_group" {
+//  name = "webapp-${var.environment}-api"
+//  retention_in_days = 5
+//}
 
-resource "aws_cloudwatch_log_metric_filter" "404_metric_filter" {
-  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
-  "metric_transformation" {
-    name = "Status_404"
-    namespace = "WebappMetrics"
-    value = "1"
-  }
-  name = "404_metric_filter"
-  pattern = "{ $.status = 404 }"
-}
-resource "aws_cloudwatch_log_metric_filter" "5xx_metric_filter" {
-  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
-  "metric_transformation" {
-    name = "Status_5XX"
-    namespace = "WebappMetrics"
-    value = "1"
-  }
-  name = "5xx_metric_filter"
-  pattern = "{ $.status = 5* }"
-}
+//resource "aws_cloudwatch_log_metric_filter" "404_metric_filter" {
+//  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
+//  "metric_transformation" {
+//    name = "Status_404"
+//    namespace = "WebappMetrics"
+//    value = "1"
+//  }
+//  name = "404_metric_filter"
+//  pattern = "{ $.status = 404 }"
+//}
+//resource "aws_cloudwatch_log_metric_filter" "5xx_metric_filter" {
+//  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
+//  "metric_transformation" {
+//    name = "Status_5XX"
+//    namespace = "WebappMetrics"
+//    value = "1"
+//  }
+//  name = "5xx_metric_filter"
+//  pattern = "{ $.status = 5* }"
+//}
 
-resource "aws_cloudwatch_log_metric_filter" "2xx_metric_filter" {
-  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
+//resource "aws_cloudwatch_log_metric_filter" "2xx_metric_filter" {
+//  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
+//
+//
+//  "metric_transformation" {
+//    name = "Status_2XX"
+//    namespace = "WebappMetrics"
+//    value = "1"
+//  }
+//  name = "2xx_metric_filter"
+//  pattern = "{ $.status = 2* }"
+//}
 
-
-  "metric_transformation" {
-    name = "Status_2XX"
-    namespace = "WebappMetrics"
-    value = "1"
-  }
-  name = "2xx_metric_filter"
-  pattern = "{ $.status = 2* }"
-}
-
-resource "aws_cloudwatch_log_metric_filter" "2xx_metric_filter_bytes" {
-  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
-  "metric_transformation" {
-    name = "body_bytes_sent"
-    namespace = "WebappMetrics"
-    value = "$.body_bytes_sent"
-  }
-  name = "2xx_metric_filter_bytes"
-  pattern = "{ $.status = 2* }"
-}
+//resource "aws_cloudwatch_log_metric_filter" "2xx_metric_filter_bytes" {
+//  log_group_name = "${aws_cloudwatch_log_group.access_log_group.name}"
+//  "metric_transformation" {
+//    name = "body_bytes_sent"
+//    namespace = "WebappMetrics"
+//    value = "$.body_bytes_sent"
+//  }
+//  name = "2xx_metric_filter_bytes"
+//  pattern = "{ $.status = 2* }"
+//}
 
 
 #hosted zone mapping
-data "aws_route53_zone" "parent" {
-  name         = "${var.route53_zone_base}."
-  #private_zone = true
-}
+//data "aws_route53_zone" "parent" {
+//  name         = "${var.route53_zone_base}."
+//  #private_zone = true
+//}
 
-resource "aws_route53_record" "record_set" {
-  zone_id = "${data.aws_route53_zone.parent.zone_id}"
-  name    = "${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
-  type    = "A"
-
-  alias {
-    #name                   = "dualstack.${aws_lb.alb.dns_name}"
-    name                   = "${aws_elb.clb.dns_name}"
-    zone_id                = "${aws_elb.clb.zone_id}"
-    evaluate_target_health = false
-  }
-}
+//resource "aws_route53_record" "record_set" {
+//  zone_id = "${data.aws_route53_zone.parent.zone_id}"
+//  name    = "${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
+//  type    = "A"
+//
+//  alias {
+//    #name                   = "dualstack.${aws_lb.alb.dns_name}"
+//    name                   = "${aws_elb.clb.dns_name}"
+//    zone_id                = "${aws_elb.clb.zone_id}"
+//    evaluate_target_health = false
+//  }
+//}
 
 resource "aws_ebs_volume" "ebs_jenkins" {
   availability_zone = "${var.aws_region}${var.availibity_zone_suffix}"
@@ -497,16 +503,16 @@ resource "aws_ebs_volume" "ebs_jenkins" {
 //  instance_id = "${aws_instance.id}"
 //}
 
-output "jenkins_r53_dns_name" {
-  description = "The Load Balancer DNS Name"
-  value = "${aws_route53_record.record_set.name}"
-}
+//output "jenkins_r53_dns_name" {
+//  description = "The Load Balancer DNS Name"
+//  value = "${aws_route53_record.record_set.name}"
+//}
 
-output "elb_dns_name" {
-  description = "The Load Balancer DNS Name"
-  value = "${aws_elb.clb.dns_name}"
-
-}
+//output "elb_dns_name" {
+//  description = "The Load Balancer DNS Name"
+//  value = "${aws_elb.clb.dns_name}"
+//
+//}
 
 output "jenkins_ebs_volume_id" {
   value = "${aws_ebs_volume.ebs_jenkins.arn}"
@@ -516,11 +522,11 @@ output "aws_autoscaling_group" {
   value = "${aws_autoscaling_group.webapp_v1.name}"
 }
 
-output "ssl_certificate_id" {
-  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
-}
+//output "ssl_certificate_id" {
+//  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
+//}
 
 output "jenkins_url" {
-  value = "https://${aws_route53_record.record_set.name}"
+  value = "http://${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
 }
 

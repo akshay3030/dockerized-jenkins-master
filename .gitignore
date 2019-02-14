@@ -13,3 +13,4 @@
 # .tfstate files
 *.tfstate
 *.tfstate.*
+*.zip

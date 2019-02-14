@@ -95,6 +95,9 @@ data "template_file" "init" {
     region = "${var.aws_region}"
     ebs_volume_id = "${aws_ebs_volume.ebs_jenkins.id}"
     s3_access_key = "${var.s3_access_key}"
+    r53_zone_base = "${var.route53_zone_base}"
+    environment   = "${var.environment}"
+    environment_prefix = "${var.environment_prefix}"
 
   }
 }
