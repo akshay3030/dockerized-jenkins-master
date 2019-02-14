@@ -117,12 +117,12 @@ aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --chang
     {
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "'$RECORD_SET_NAME'",
+        "Name": "'"$RECORD_SET_NAME"'",
         "Type": "A",
         "TTL": 300,
         "ResourceRecords": [
           {
-            "Value": "'$PrivateIP'"
+            "Value": "'"$PrivateIP"'"
           }
         ]
       }
