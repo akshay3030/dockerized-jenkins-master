@@ -513,7 +513,11 @@ resource "aws_ebs_volume" "ebs_jenkins" {
 //  value = "${aws_elb.clb.dns_name}"
 //
 //}
-
+  
+output "jenkins_url" {
+  value = "http://${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
+}
+  
 output "jenkins_ebs_volume_id" {
   value = "${aws_ebs_volume.ebs_jenkins.arn}"
 }
@@ -526,7 +530,5 @@ output "aws_autoscaling_group" {
 //  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
 //}
 
-output "jenkins_url" {
-  value = "http://${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
-}
+
 
