@@ -7,6 +7,7 @@ USER root
 RUN apk add --update py-pip && pip install --upgrade pip && pip install awscli
 
 #RUN apt-get install python-pip && pip install awscli --upgrade --user
+RUN apk add jq
 
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
 ENV DOCKER_CONFIG="/var/jenkins_home"
