@@ -1,5 +1,5 @@
-FROM jenkins/jenkins:2.150.3-alpine
-#FROM jenkins/jenkins:2.150.3
+FROM jenkins/jenkins:2.164.1-alpine
+#FROM jenkins/jenkins:2.164.1
 USER root
 #RUN curl -Sslk https://download.docker.com/linux/static/stable/x86_64/docker-18.06.1-ce.tgz -o docker-18.06.1-ce.tgz
 #RUN tar -zxvf docker-18.06.1-ce.tgz -C /usr/local/bin
