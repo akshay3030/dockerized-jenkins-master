@@ -211,6 +211,7 @@ resource "aws_launch_configuration" "launchWebapp" {
     #device_name = "/dev/xvda"
     volume_type = "gp2"
     delete_on_termination = true
+    volume_size = "20"
   }
 
   ebs_optimized = false
