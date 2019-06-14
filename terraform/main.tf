@@ -521,7 +521,7 @@ resource "aws_ebs_volume" "ebs_jenkins" {
 //
 //}
 
-resource "null_resource" "r53-recordset-delete" {
+resource "null_resource" "delete-r53-recordset-on-destroy-only" {
   //  triggers {
   //    uuid = "${azurerm_virtual_machine.instance.id}"
   //  }
@@ -530,10 +530,14 @@ resource "null_resource" "r53-recordset-delete" {
 
     command = <<EOT
     HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --query "HostedZones[?starts_with(Name, '${var.route53_zone_base}')].Id" --output text | sed -e 's/\/.*\///g')
-    echo $HOSTED_ZONE_ID
+    echo "HOSTED_ZONE_ID --> $HOSTED_ZONE_ID"
+    ASG_NAME=${aws_autoscaling_group.webapp_v1.name}
+    echo "ASG_NAME --> $ASG_NAME"
+    PrivateIP=$(aws ec2 describe-instances --region ${var.aws_region} --instance-ids $(aws autoscaling describe-auto-scaling-instances --region ${var.aws_region} --output text --query "AutoScalingInstances[?AutoScalingGroupName=='${aws_autoscaling_group.webapp_v1.name}'].InstanceId") --query "Reservations[].Instances[].PrivateIpAddress" --output text)
+    echo "PrivateIP --> $PrivateIP"
     RECORD_SET_NAME="${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
-    echo $RECORD_SET_NAME
-    aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch '{"Changes": [{"Action": "DELETE","ResourceRecordSet": {"Name": "'"$RECORD_SET_NAME"'","Type": "A","TTL": 300,"ResourceRecords": [{"Value": "'"0.0.0.0"'"}]}}]}'
+    echo "RECORD_SET_NAME --> $RECORD_SET_NAME"
+    aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch '{"Changes": [{"Action": "DELETE","ResourceRecordSet": {"Name": "'"$RECORD_SET_NAME"'","Type": "A","TTL": 300,"ResourceRecords": [{"Value": "'"$PrivateIP"'"}]}}]}'
     echo "r53-recordset-delete is done"
 EOT
   }
