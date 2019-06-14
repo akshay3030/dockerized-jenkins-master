@@ -1,28 +1,24 @@
-
 ########
 provider "aws" {
   //  access_key = "${var.aws_access_key}"
   //  secret_key = "${var.aws_secret_key}"
   #region     = "us-west-2"
   region = "${var.aws_region}"
+
   #profile = "default"
   profile = "${var.aws_profile}"
 }
 
 resource "random_id" "server" {
   keepers = {
-    # Generate a new id each time we switch to a new AMI id
-    #ami_id = "${var.ami_id}"
+    # Generate a new id each time we switch to a new AMI id  #ami_id = "${var.ami_id}"
   }
 
   byte_length = 8
 }
 
-
 resource "aws_autoscaling_group" "webapp_v1" {
-  
-  #below will create a new autoscaling group everytime an update is made to asg(or launch configuration changes)
-  #name_prefix = "Webapp-${var.environment}-${var.environment_prefix}-"
+  #below will create a new autoscaling group everytime an update is made to asg(or launch configuration changes)  #name_prefix = "Webapp-${var.environment}-${var.environment_prefix}-"
 
   #name_prefix = "jenkins-ebs-co-${var.environment}-${var.environment_prefix}-${aws_launch_configuration.launchWebapp.name}-"
 
@@ -30,30 +26,33 @@ resource "aws_autoscaling_group" "webapp_v1" {
 
   #depends_on = ["aws_alb.webapp"]
   depends_on = ["aws_launch_configuration.launchWebapp"]
+
   #name = "Webapp-${var.environment}-${var.environment_prefix}"
-  default_cooldown = 300
-  desired_capacity = "${var.num_nodes}"
+  default_cooldown          = 300
+  desired_capacity          = "${var.num_nodes}"
   health_check_grace_period = 600
 
   launch_configuration = "${aws_launch_configuration.launchWebapp.name}"
-  max_size = "${var.max_num_nodes}"
-  min_size = "${var.min_num_nodes}"
+  max_size             = "${var.max_num_nodes}"
+  min_size             = "${var.min_num_nodes}"
 
   #load_balancers = ["${aws_elb.clb.id}"]
   #target_group_arns = ["${aws_alb_target_group.tgHttp.arn}"]
   availability_zones = ["${var.aws_region}${var.availibity_zone_suffix}"]
+
   vpc_zone_identifier = ["${data.aws_subnet.private_subnet_0.id}"]
 
   tags = [
     {
-      key                 = "Name"
+      key = "Name"
+
       #value               = "${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
-      value                = "test-instance-clb"
+      value               = "test-instance-clb"
       propagate_at_launch = true
     },
     {
       key                 = "Backup"
-      value               = "${var.environment == "dev" ? 1 : 3}"  # if IsDevelopment 1, else 3
+      value               = "${var.environment == "dev" ? 1 : 3}" # if IsDevelopment 1, else 3
       propagate_at_launch = true
     },
     {
@@ -85,29 +84,26 @@ resource "aws_autoscaling_group" "webapp_v1" {
       key                 = "Compliance"
       value               = "No-PII"
       propagate_at_launch = true
-    }
+    },
   ]
 
-
-//  target_group_arns = ["${aws_alb_target_group.tgWebappHttp.arn}", "${aws_alb_target_group.tgWebappHttps.arn}"]
+  //  target_group_arns = ["${aws_alb_target_group.tgWebappHttp.arn}", "${aws_alb_target_group.tgWebappHttps.arn}"]
   //target_group_arns = ["${aws_alb_target_group.tgWebappHttps.arn}"]
 
   termination_policies = ["OldestLaunchConfiguration", "OldestInstance"]
+
   #vpc_zone_identifier = ["${data.aws_subnet.public_subnet_0.id}", "${data.aws_subnet.public_subnet_1.id}","${data.aws_subnet.public_subnet_2.id}"]
 
   #load_balancers = ["${aws_alb.webapp.name}"]
   #load_balancers = ["${aws_alb.webapp.id}"]
   health_check_type = "ELB"
-
   enabled_metrics = ["GroupMinSize", "GroupMaxSize", "GroupDesiredCapacity", "GroupInServiceInstances", "GroupTotalInstances"]
-
   metrics_granularity = "1Minute"
 
-//removing it as it's causing issue with external ebs volume attachment saying volume is already attached to another instance
-//  lifecycle {
-//    create_before_destroy = true
-//  }
-
+  //removing it as it's causing issue with external ebs volume attachment saying volume is already attached to another instance
+  //  lifecycle {
+  //    create_before_destroy = true
+  //  }
 }
 
 //resource "aws_autoscaling_policy" "autopolicy-up" {
@@ -134,7 +130,6 @@ resource "aws_autoscaling_group" "webapp_v1" {
 //  alarm_actions = ["${aws_autoscaling_policy.autopolicy-up.arn}"]
 //}
 
-
 //resource "aws_autoscaling_policy" "autopolicy-down" {
 //  name = "${var.environment}-${var.environment_prefix}-autopolicy-down"
 //  scaling_adjustment = -1
@@ -160,7 +155,6 @@ resource "aws_autoscaling_group" "webapp_v1" {
 //  alarm_description = "This metric monitor EC2 instance cpu utilization"
 //  alarm_actions = ["${aws_autoscaling_policy.autopolicy-down.arn}"]
 //}
-
 
 //# Create a classic load balancer
 //resource "aws_elb" "clb" {
@@ -216,27 +210,26 @@ resource "aws_autoscaling_group" "webapp_v1" {
 //  }
 //}
 
-
 resource "aws_launch_configuration" "launchWebapp" {
   #name = "Webapp-LC-${var.environment_type}-${var.environment}-${md5("${data.template_file.init.rendered}")}"
   #name = "Webapp-LC-${var.environment_type}-${var.environment}-${random_id.server.hex}"
   root_block_device {
     #device_name = "/dev/xvda"
-    volume_type = "gp2"
+    volume_type           = "gp2"
     delete_on_termination = true
-    volume_size = "24"
+    volume_size           = "24"
   }
 
   ebs_optimized = false
 
   iam_instance_profile = "${aws_iam_instance_profile.WebappInstanceProfile.name}"
 
-  image_id        = "${data.aws_ami.amazon-linux-2.id}"
+  image_id          = "${data.aws_ami.amazon-linux-2.id}"
   enable_monitoring = true
-  instance_type   = "${var.ec2_instance_type}"
-  key_name = "${var.ec2_keypair_name}"
+  instance_type     = "${var.ec2_instance_type}"
+  key_name          = "${var.ec2_keypair_name}"
   placement_tenancy = "default"
-  security_groups = ["${aws_security_group.sgWebappEc2.id}"]
+  security_groups   = ["${aws_security_group.sgWebappEc2.id}"]
 
   user_data = "${data.template_file.init.rendered}"
 
@@ -276,59 +269,59 @@ resource "aws_launch_configuration" "launchWebapp" {
 resource "aws_security_group" "sgWebappEc2" {
   #name = "webapp_v1_instance_sg"
   description = "Security Group for Webapp v1 instances"
-  vpc_id = "${data.aws_vpc.myorg.id}"
+  vpc_id      = "${data.aws_vpc.myorg.id}"
 
   ingress {
     cidr_blocks = ["10.0.0.0/8"]
-    from_port = -1
-    to_port = -1
-    protocol = "icmp"
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
   }
 
   ingress {
     cidr_blocks = ["10.0.0.0/8"]
-    from_port = 22
-    protocol = "tcp"
-    to_port = 22
+    from_port   = 22
+    protocol    = "tcp"
+    to_port     = 22
   }
+
   ingress {
     cidr_blocks = ["10.0.0.0/8"]
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
   }
 
   #verify :may or may not need this
-//  ingress {
-//    security_groups = ["${aws_security_group.sgWebappElb.id}"]
-//    from_port = 80
-//    protocol = "tcp"
-//    to_port = 80
-//  }
+  //  ingress {
+  //    security_groups = ["${aws_security_group.sgWebappElb.id}"]
+  //    from_port = 80
+  //    protocol = "tcp"
+  //    to_port = 80
+  //  }
 
-//  ingress {
-//    security_groups = ["${aws_security_group.sgWebappElb.id}"]
-//    from_port = 443
-//    protocol = "tcp"
-//    to_port = 443
-//  }
+
+  //  ingress {
+  //    security_groups = ["${aws_security_group.sgWebappElb.id}"]
+  //    from_port = 443
+  //    protocol = "tcp"
+  //    to_port = 443
+  //  }
 
   egress {
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    cidr_blocks     = ["0.0.0.0/0"]
-
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
-
   lifecycle {
     create_before_destroy = true
   }
-
 }
 
 resource "aws_iam_role" "WebappRole" {
   name = "${var.jenkins_v1_role_prefix}-${var.environment}-${var.environment_prefix}"
+
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -481,7 +474,6 @@ resource "aws_iam_role_policy_attachment" "root_policy_attach" {
 //  pattern = "{ $.status = 2* }"
 //}
 
-
 #hosted zone mapping
 //data "aws_route53_zone" "parent" {
 //  name         = "${var.route53_zone_base}."
@@ -506,7 +498,8 @@ resource "aws_ebs_volume" "ebs_jenkins" {
   type              = "gp2"
   encrypted         = true
   size              = "${var.ebs_size_gb}"
-  tags {
+
+  tags = {
     Name = "${var.environment}-${var.environment_prefix}-ebs-vol"
   }
 }
@@ -527,11 +520,29 @@ resource "aws_ebs_volume" "ebs_jenkins" {
 //  value = "${aws_elb.clb.dns_name}"
 //
 //}
-  
+
+resource "null_resource" "r53-recordset-delete" {
+  //  triggers {
+  //    uuid = "${azurerm_virtual_machine.instance.id}"
+  //  }
+  provisioner "local-exec" {
+    when = "destroy"
+
+    command = <<EOT
+    HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --query "HostedZones[?starts_with(Name, '${var.route53_zone_base}')].Id" --output text | sed -e 's/\/.*\///g')
+    echo $HOSTED_ZONE_ID
+    RECORD_SET_NAME="${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
+    echo $RECORD_SET_NAME
+    aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch '{"Changes": [{"Action": "DELETE","ResourceRecordSet": {"Name": "'"$RECORD_SET_NAME"'","Type": "A","TTL": 300,"ResourceRecords": [{"Value": "'"0.0.0.0"'"}]}}]}'
+    echo "r53-recordset-delete is done"
+EOT
+  }
+}
+
 output "jenkins_url" {
   value = "http://${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
 }
-  
+
 output "jenkins_ebs_volume_id" {
   value = "${aws_ebs_volume.ebs_jenkins.arn}"
 }
@@ -543,6 +554,4 @@ output "aws_autoscaling_group" {
 //output "ssl_certificate_id" {
 //  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
 //}
-
-
 
