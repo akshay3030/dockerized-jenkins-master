@@ -98,10 +98,11 @@ resource "aws_autoscaling_group" "webapp_v1" {
   enabled_metrics = ["GroupMinSize", "GroupMaxSize", "GroupDesiredCapacity", "GroupInServiceInstances", "GroupTotalInstances"]
 
   metrics_granularity = "1Minute"
-  
-  lifecycle {
-    create_before_destroy = true
-  }
+
+//removing it as it's causing issue with external ebs volume attachment saying volume is already attached to another instance
+//  lifecycle {
+//    create_before_destroy = true
+//  }
 
 }
 
@@ -219,7 +220,7 @@ resource "aws_launch_configuration" "launchWebapp" {
     #device_name = "/dev/xvda"
     volume_type = "gp2"
     delete_on_termination = true
-    volume_size = "24"
+    volume_size = "20"
   }
 
   ebs_optimized = false
