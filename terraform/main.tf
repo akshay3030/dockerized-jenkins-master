@@ -19,7 +19,6 @@ resource "random_id" "server" {
 }
 
 
-
 resource "aws_autoscaling_group" "webapp_v1" {
   
   #below will create a new autoscaling group everytime an update is made to asg(or launch configuration changes)
