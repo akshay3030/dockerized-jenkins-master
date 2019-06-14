@@ -1,10 +1,11 @@
-FROM jenkins/jenkins:2.164.1-alpine
+FROM jenkins/jenkins:2.176.1-alpine
 #FROM jenkins/jenkins:2.164.1
 USER root
 #RUN curl -Sslk https://download.docker.com/linux/static/stable/x86_64/docker-18.06.1-ce.tgz -o docker-18.06.1-ce.tgz
 #RUN tar -zxvf docker-18.06.1-ce.tgz -C /usr/local/bin
 
 RUN apk add --update py-pip && pip install --upgrade pip && pip install awscli
+#RUN apk add --no-cache python3 && pip3 install -U pip awscli boto3 docker-compose
 
 #RUN apt-get install python-pip && pip install awscli --upgrade --user
 RUN apk add jq

@@ -15,6 +15,7 @@ instance.setSecurityRealm(hudsonRealm)
 def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
 instance.setAuthorizationStrategy(strategy)
 instance.setNumExecutors(numberOfExecutors)
+instance.setLabelString("linux docker");
 
 instance.save()
  
