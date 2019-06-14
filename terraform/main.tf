@@ -22,8 +22,10 @@ resource "random_id" "server" {
 resource "aws_autoscaling_group" "webapp_v1" {
   
   #below will create a new autoscaling group everytime an update is made to asg(or launch configuration changes)
-  name_prefix = "Webapp-${var.environment}-${var.environment_prefix}-"
-  
+  #name_prefix = "Webapp-${var.environment}-${var.environment_prefix}-"
+
+  name_prefix = "jenkins-ebs-co-${var.environment}-${var.environment_prefix}-${aws_launch_configuration.launchWebapp.name}"
+
   #depends_on = ["aws_alb.webapp"]
   depends_on = ["aws_launch_configuration.launchWebapp"]
   #name = "Webapp-${var.environment}-${var.environment_prefix}"
@@ -220,7 +222,7 @@ resource "aws_launch_configuration" "launchWebapp" {
     #device_name = "/dev/xvda"
     volume_type = "gp2"
     delete_on_termination = true
-    volume_size = "20"
+    volume_size = "24"
   }
 
   ebs_optimized = false
