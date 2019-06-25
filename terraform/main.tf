@@ -559,3 +559,15 @@ output "aws_autoscaling_group" {
 //  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
 //}
 
+output "instance_id" {
+  //  value = "${data.awsasgips.test.instance_id.0}"
+  value = "${data.awsasgips.instance_prop.instance_id}"
+
+}
+
+output "private_ip" {
+  //  value = "${data.awsasgips.test.private_ip.0}"
+  value = "${data.awsasgips.instance_prop.private_ip}"
+
+}
+
