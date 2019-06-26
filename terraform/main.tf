@@ -533,7 +533,8 @@ resource "null_resource" "delete-r53-recordset-on-destroy-only" {
     echo "HOSTED_ZONE_ID --> $HOSTED_ZONE_ID"
     ASG_NAME=${aws_autoscaling_group.webapp_v1.name}
     echo "ASG_NAME --> $ASG_NAME"
-    PrivateIP=$(aws ec2 describe-instances --region ${var.aws_region} --instance-ids $(aws autoscaling describe-auto-scaling-instances --region ${var.aws_region} --output text --query "AutoScalingInstances[?AutoScalingGroupName=='${aws_autoscaling_group.webapp_v1.name}'].InstanceId") --query "Reservations[].Instances[].PrivateIpAddress" --output text)
+    #PrivateIP=$(aws ec2 describe-instances --region ${var.aws_region} --instance-ids $(aws autoscaling describe-auto-scaling-instances --region ${var.aws_region} --output text --query "AutoScalingInstances[?AutoScalingGroupName=='${aws_autoscaling_group.webapp_v1.name}'].InstanceId") --query "Reservations[].Instances[].PrivateIpAddress" --output text)
+    PrivateIP=${data.awsasgips.instance_prop.private_ip.0}
     echo "PrivateIP --> $PrivateIP"
     RECORD_SET_NAME="${var.environment}.${var.environment_prefix}.${var.route53_zone_base}"
     echo "RECORD_SET_NAME --> $RECORD_SET_NAME"
@@ -559,3 +560,14 @@ output "aws_autoscaling_group" {
 //  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
 //}
 
+output "instance_id" {
+  //  value = "${data.awsasgips.test.instance_id.0}"
+  value = "${data.awsasgips.instance_prop.instance_id}"
+
+}
+
+output "private_ip" {
+  //  value = "${data.awsasgips.test.private_ip.0}"
+  value = "${data.awsasgips.instance_prop.private_ip}"
+
+}

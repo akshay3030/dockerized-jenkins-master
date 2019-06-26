@@ -137,3 +137,14 @@ data "aws_ami" "amazon-linux-2" {
     #values = ["amzn2-ami-hvm-2.0.????????-arm64-gp2"]
   }
 }
+
+
+// my custom terraform provider/plugin
+provider "awsasgips" {
+region = "${var.aws_region}"
+
+}
+
+data "awsasgips" "instance_prop" {
+asgname = "${aws_autoscaling_group.webapp_v1.name}"
+}
