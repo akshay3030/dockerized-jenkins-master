@@ -22,8 +22,11 @@ COPY plugins.list /usr/share/jenkins/ref/plugins.list
 #COPY config-saml.xml /usr/share/jenkins/ref/config.xml this won't work from here,
 #use init.groovy to configure it --> https://github.com/codeontap/docker-jenkins-master/blob/fbde86bb1b328152efa4f1012759610fe21bc0d3/scripts/init/configure-initial-user.groovy or https://github.com/jenkinsci/saml-plugin/blob/master/src/main/java/org/jenkinsci/plugins/saml/SamlSecurityRealm.java
 
+#This user is the default for the jenkins image and is required for containers launched from the image to run Jenkins correctly.
+USER jenkins
 
 RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.list
 
 RUN git config --global http.sslVerify false
+
 
