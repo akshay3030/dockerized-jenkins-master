@@ -555,6 +555,9 @@ output "aws_autoscaling_group" {
   value = "${aws_autoscaling_group.webapp_v1.name}"
 }
 
+output "amazon_linux2_ami_id"{
+  value = "${data.aws_ami.amazon-linux-2.id}"
+}
 //output "ssl_certificate_id" {
 //  value = "${data.aws_acm_certificate.jenkins_acm.arn}"
 //}
