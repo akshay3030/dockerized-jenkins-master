@@ -355,9 +355,7 @@ resource "aws_iam_policy" "root" {
     "Statement": [{
         "Effect": "Allow",
         "Action": [
-            "ec2:Describe*",
-            "ec2:AttachVolume",
-            "ec2:DetachVolume",
+            "ec2:*",
             "cloudformation:DescribeStacks",
             "kms:Decrypt",
             "sts:AssumeRole",
