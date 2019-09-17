@@ -12,4 +12,12 @@ jenkins_alb will either need EFS mounting(not implemented yet) or s3 mount as ec
 
     zip -r jobs.zip jobs/
     
+
+#SSH
+
+ip=$(aws ec2 describe-instances --filters "Name=tag:Environment,Values=em-jenkins" --query "Reservations[].Instances[].PrivateIpAddress" --region us-west-2 --output text)
+
+ssh-keygen -R $ip;ssh ec2-user@$ip -i ~/.ssh/xxops
+
+    
     
