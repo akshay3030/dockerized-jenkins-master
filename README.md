@@ -24,6 +24,11 @@ ssh-keygen -R $ip;ssh ec2-user@$ip -i ~/.ssh/xxops
 
 ssh -i ~/.ssh/xxx ec2-user@$(aws ec2 describe-instances --filters "Name=tag:Environment,Values=em-jenkins" --query "Reservations[].Instances[].PrivateIpAddress" --region us-west-2 --output text)
  -t 'sudo /sbin/shutdown -h now'
+ 
+ 
+# Terminate Jenkins EC2 from inside
+
+Use a lambda function and trigger than Fn from a jenkins job inside
 
     
     
