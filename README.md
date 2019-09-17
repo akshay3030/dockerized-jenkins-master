@@ -30,5 +30,8 @@ ssh -i ~/.ssh/xxx ec2-user@$(aws ec2 describe-instances --filters "Name=tag:Envi
 
 Use a lambda function and trigger than Fn from a jenkins job inside
 
+aws lambda invoke --function-name $LAMBDA_FUNCTION_NAME delete.json --payload "{\"key1\": \"value1\"}"
+
+aws lambda invoke --function-name $LAMBDA_FUNCTION_NAME delete.json >> delete2.json &
     
     
