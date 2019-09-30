@@ -1,0 +1,7 @@
+environment_prefix = "jenkins"
+route53_zone_base="xxxx.xxxx.io"
+vpc_name="xxxxx-default"
+ec2_keypair_name = "xxxxx"
+service_name = "xxxxx"
+s3_access_key = "xxxxx"
+ebs_size_gb = "25"

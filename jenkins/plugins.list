@@ -83,4 +83,7 @@ aws-credentials
 blueocean
 rebuild
 saml
-
+pipeline-utility-steps
+build-user-vars-plugin
+active-directory
+embeddable-build-status

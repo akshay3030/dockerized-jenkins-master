@@ -24,61 +24,68 @@ data "aws_region" "current" {
 
 # Get our myorg-default vpc
 data "aws_vpc" "myorg" {
-  tags {
+  tags = {
     #Name = "myorg-private"
     #Name = "myorg-default"
     Name = "${var.vpc_name}"
-
   }
 }
 
 # private subnets
 data "aws_subnet" "private_subnet_0" {
   vpc_id = "${data.aws_vpc.myorg.id}"
+
   filter {
-    name="tag:Name"
-    values=["Private0*"]
+    name = "tag:Name"
+
+    #values=["Private0*"]
+    values = ["Private*${var.aws_region}${var.availibity_zone_suffix}*"]
   }
 }
 
 data "aws_subnet" "private_subnet_1" {
   vpc_id = "${data.aws_vpc.myorg.id}"
+
   filter {
-    name="tag:Name"
-    values=["Private1*"]
+    name   = "tag:Name"
+    values = ["Private1*"]
   }
 }
 
 data "aws_subnet" "private_subnet_2" {
   vpc_id = "${data.aws_vpc.myorg.id}"
+
   filter {
-    name="tag:Name"
-    values=["Private2*"]
+    name   = "tag:Name"
+    values = ["Private2*"]
   }
 }
 
 # public subnets
 data "aws_subnet" "public_subnet_0" {
   vpc_id = "${data.aws_vpc.myorg.id}"
+
   filter {
-    name="tag:Name"
-    values=["Public0*"]
+    name   = "tag:Name"
+    values = ["Public0*"]
   }
 }
 
 data "aws_subnet" "public_subnet_1" {
   vpc_id = "${data.aws_vpc.myorg.id}"
+
   filter {
-    name="tag:Name"
-    values=["Public1*"]
+    name   = "tag:Name"
+    values = ["Public1*"]
   }
 }
 
 data "aws_subnet" "public_subnet_2" {
   vpc_id = "${data.aws_vpc.myorg.id}"
+
   filter {
-    name="tag:Name"
-    values=["Public2*"]
+    name   = "tag:Name"
+    values = ["Public2*"]
   }
 }
 
@@ -89,17 +96,44 @@ data "aws_availability_zones" "all" {}
 data "template_file" "init" {
   template = "${file("${path.module}/userdata")}"
 
-  vars {
-
-    region = "${var.aws_region}"
-    ebs_volume_id = "${aws_ebs_volume.ebs_jenkins.id}"
-
+  vars = {
+    region             = "${var.aws_region}"
+    ebs_volume_id      = "${aws_ebs_volume.ebs_jenkins.id}"
+    s3_access_key      = "${var.s3_access_key}"
+    r53_zone_base      = "${var.route53_zone_base}"
+    environment        = "${var.environment}"
+    environment_prefix = "${var.environment_prefix}"
   }
 }
-
 
 //data "aws_route53_zone" "hosted_zone" {
 //  name         = "${var.route53_zone_base}"
 //  private_zone = "${var.is_hosted_zone_private}"
 //  provider = "aws"
 //}
+
+data "aws_acm_certificate" "jenkins_acm" {
+  domain      = "*.${var.environment_prefix}.${var.route53_zone_base}"
+  types       = ["AMAZON_ISSUED"]
+  statuses    = ["ISSUED"]
+  most_recent = true
+}
+
+data "aws_ami" "amazon-linux-2" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "owner-alias"
+    values = ["amazon"]
+  }
+
+  filter {
+    name = "name"
+
+    #values = ["amzn2-ami-hvm*"]
+    values = ["amzn2-ami-hvm-2.0.????????-x86_64-gp2"]
+
+    #values = ["amzn2-ami-hvm-2.0.????????-arm64-gp2"]
+  }
+}

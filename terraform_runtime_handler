@@ -1,0 +1,244 @@
+#!/usr/bin/env bash
+
+# Akshay Kumar
+
+# exit on failure
+set -e
+
+
+# get the script dir so that we can use relative paths
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TERRAFORM_ROOT="."
+BACKEND_TYPE="s3-cloud"
+REGION="us-west-2"
+
+
+while [[ $# > 0 ]]
+    do
+        key="$1"
+
+        case $key in
+            -e|--env)
+            ENV="$2"
+            shift # move to next
+            ;;
+            --terraform-init-args)
+            TERRAFORM_INIT_ARGS="$2"
+            shift # move to next
+            ;;
+            --terraform-other-args)
+            TERRAFORM_OTHER_ARGS="$2"
+            shift # move to next
+            ;;
+            -t|--terraform-root)
+            TERRAFORM_ROOT="$2"
+            shift # move to next
+            ;;
+            -k|--statefile-s3-key)
+            STATEFILE_S3_KEY="$2"
+            shift # move to next
+            ;;
+            -i|--image-name)
+            IMAGE_NAME="$2"
+            shift # move to next
+            ;;
+            -a|--terraform-action)
+            TERRAFORM_ACTION="$2"
+            shift # move to next
+            ;;
+            -b|--backend-type)
+            BACKEND_TYPE="$2"
+            shift # move to next
+            ;;
+            -l|--log-level)
+            LOG_LEVEL="$2"
+            shift # move to next
+            ;;
+            *)
+            echo "!!! Unknown Option: $key"  # unknown option
+            exit
+            ;;
+        esac
+        shift # past argument or value
+    done
+
+# Enabling Terraform log levels
+if [ -z ${LOG_LEVEL+x} ]; then
+    echo "LOG_LEVEL is not found"
+else
+    if [ "${LOG_LEVEL}" == "none" ]; then
+            echo "LOG_LEVEL is none"
+            LOG_LEVEL=""
+    else
+        echo "LOG_LEVEL is set to '$LOG_LEVEL'"
+        # below not needed as TF_LOG will be set at container runtime via -e
+        #export TF_LOG=${LOG_LEVEL}
+    fi
+fi
+
+echo "------------------ Running Terraform Action ------------------"
+
+CURRENT_DIR="$(pwd)"
+echo "TERRAFORM_ACTION --3--> ${TERRAFORM_ACTION}"
+echo "${SCRIPT_DIR} - ${CURRENT_DIR}"
+
+echo "ls in root ------->"
+ls
+echo "ls in terraform root ------->"
+ls ${TERRAFORM_ROOT}
+
+#ACCOUNT_NAME=$(aws iam list-account-aliases --query 'AccountAliases[*]' --output text)
+ACCOUNT_NAME=$(aws iam list-account-aliases --query 'AccountAliases[0]' --output text)
+ACCOUNT_NAME=${ACCOUNT_NAME/xx-/}
+STATEFILE_S3_KEY=${STATEFILE_S3_KEY//\/.\//\/}
+
+
+echo "BACKEND_TYPE  --> ${BACKEND_TYPE}"
+if [ "${BACKEND_TYPE}" == "s3-cloud" ]; then
+
+echo "creating s3 backend config for s3-cloud"
+
+echo "*******Removing previous terraform configurations******"
+echo "Terraform Workspace is -->${CURRENT_DIR}/${TERRAFORM_ROOT}"
+#rm -f ${CURRENT_DIR}/${TERRAFORM_ROOT}/backend_config.tf
+rm -rf ${CURRENT_DIR}/${TERRAFORM_ROOT}/.terraform
+
+/bin/cat <<EOF >${CURRENT_DIR}/${TERRAFORM_ROOT}/backend_config.tf
+terraform {
+  backend "s3" {
+    bucket = "xx-deploy-${ACCOUNT_NAME}" # xx-s3-bucket hosting state file
+    key = "${STATEFILE_S3_KEY}/states" # Project should be a unique key for this project
+    region = "${REGION}"
+    role_arn = "arn:aws:iam::<<account-id-99999>>:role/terraform/xx-deploy-${ACCOUNT_NAME}-role"
+    dynamodb_table = "xx-deploy-${ACCOUNT_NAME}"
+  }
+}
+EOF
+cat ${CURRENT_DIR}/${TERRAFORM_ROOT}/backend_config.tf
+
+fi
+
+ls ${CURRENT_DIR}/${TERRAFORM_ROOT}
+
+docker rm --force terraform || true
+#echo "docker run -i -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -d -w=/app/${TERRAFORM_ROOT} --entrypoint /bin/sh --name terraform -v ${CURRENT_DIR}:/app ${IMAGE_NAME}"
+container_id=$(docker run -i -e TF_LOG=${LOG_LEVEL} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -d -w=/app/${TERRAFORM_ROOT} --entrypoint /bin/sh --name terraform -v ${CURRENT_DIR}:/app ${IMAGE_NAME})
+
+echo $container_id
+
+#echo "setting up aws default profile"
+#docker exec -i terraform /utilities/manage_aws_profiles -p default
+
+echo "*************Running Terraform Commands Now ------------------>"
+
+#export TF_LOG=TRACE
+
+echo "terraform init ${TERRAFORM_INIT_ARGS}"
+echo "no" | docker exec -i terraform terraform init ${TERRAFORM_INIT_ARGS}
+
+echo "<--terraform workspace list-->"
+docker exec -i terraform terraform workspace list
+
+
+############ Note --> Not using terraform workspace as we are running inside container
+
+#TF_WORKSPACE=${STATEFILE_S3_KEY//\//-}
+#echo "TF_WORKSPACE --> ${TF_WORKSPACE}"
+
+#if docker exec -i terraform terraform workspace list | grep ${TF_WORKSPACE}
+ #then
+    #echo "${TF_WORKSPACE} already exists, selecting it now"
+    #docker exec -i terraform terraform workspace select ${TF_WORKSPACE}
+ #else
+    #echo "${TF_WORKSPACE} doesn't exist, creating & selecting it now"
+    #docker exec -i terraform terraform workspace new ${TF_WORKSPACE}
+#fi
+
+#docker exec -i terraform terraform workspace list
+
+case "${TERRAFORM_ACTION}" in
+
+      plan)
+        echo "terraform plan ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform plan ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      apply)
+        echo "terraform apply -auto-approve ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform apply -auto-approve ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      destroy)
+        echo "terraform destroy -auto-approve ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform destroy -auto-approve ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      unlock)
+        echo "terraform force-unlock -force ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform force-unlock -force ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      deletestatefile)
+        echo "************* START Deletion of Terraform Statefile *********************"
+        #export AWS_CREDENTIALS=`aws sts assume-role --role-arn ${IAM_ROLE} --role-session-name "$(curl 169.254.169.254/latest/meta-data/instance-id)-$(date +%s)" --output text`
+        export AWS_CREDENTIALS=`aws sts assume-role --role-arn arn:aws:iam::<<account-id-99999>>:role/terraform/xx-deploy-${ACCOUNT_NAME}-role --role-session-name s3-assumerole-session --output text`
+        export AWS_ACCESS_KEY_ID=`echo $AWS_CREDENTIALS | cut -d " " -f 5`
+        export AWS_SECRET_ACCESS_KEY=`echo $AWS_CREDENTIALS | cut -d " " -f 7`
+        export AWS_SESSION_TOKEN=`echo $AWS_CREDENTIALS | cut -d  " " -f 8`
+
+        aws configure set default.region ${REGION}
+
+        if [ "${TERRAFORM_OTHER_ARGS}" == "delete" ];
+         then
+            echo "*********Current Statefile START*********"
+            aws s3api get-object --bucket xx-deploy-${ACCOUNT_NAME} --key ${STATEFILE_S3_KEY}/states states.tfstate 2>&1 > /dev/null;cat states.tfstate
+            echo "*********Current Statefile END*********"
+            aws s3api delete-object --bucket xx-deploy-${ACCOUNT_NAME} --key ${STATEFILE_S3_KEY}/states
+            echo "Deleting the dynamodb item....."
+            echo '{"LockID": {"S": "'"xx-deploy-${ACCOUNT_NAME}/${STATEFILE_S3_KEY}/states-md5"'"}}'
+            aws dynamodb delete-item --table-name xx-deploy-${ACCOUNT_NAME} --key '{"LockID": {"S": "'"xx-deploy-${ACCOUNT_NAME}/${STATEFILE_S3_KEY}/states-md5"'"}}'
+            echo "************* State File s3://xx-deploy-${ACCOUNT_NAME}/${STATEFILE_S3_KEY}/states is DELETED *********************"
+         else
+            echo "!!!!!!!!!!!!!! ALERT DELETING TERRAFORM STATE FILE!!!!!!!!!!!!!"
+            echo "!!!!!!!!!!!!!! DON'T USE IT WITHOUT UNDERSTANDING HOW STATE FILE WORK IN TERRAFORM !!!!!!!!!!!!!"
+            echo "****DRY RUN**** State File s3://xx-deploy-${ACCOUNT_NAME}/${STATEFILE_S3_KEY}/states will be deleted"
+            echo 'Dynamodb item -->{"LockID": {"S": "'"xx-deploy-${ACCOUNT_NAME}/${STATEFILE_S3_KEY}/states-md5"'"}} will be deleted'
+            echo "Use TERRAFORM_OTHER_ARGS=delete to actually delete it"
+        fi
+        ;;
+
+      viewstatefile)
+        echo "************* START of current terraform statefile *********************"
+        export AWS_CREDENTIALS=`aws sts assume-role --role-arn arn:aws:iam::<<account-id-99999>>:role/terraform/xx-deploy-${ACCOUNT_NAME}-role --role-session-name s3-assumerole-session --output text`
+        export AWS_ACCESS_KEY_ID=`echo $AWS_CREDENTIALS | cut -d " " -f 5`
+        export AWS_SECRET_ACCESS_KEY=`echo $AWS_CREDENTIALS | cut -d " " -f 7`
+        export AWS_SESSION_TOKEN=`echo $AWS_CREDENTIALS | cut -d  " " -f 8`
+
+        aws configure set default.region ${REGION}
+        aws s3api get-object --bucket xx-deploy-${ACCOUNT_NAME} --key ${STATEFILE_S3_KEY}/states states.tfstate 2>&1 > /dev/null;cat states.tfstate
+        echo "************* END of current terraform statefile *********************"
+        ;;
+
+      output)
+        echo "terraform output"
+        docker exec -i terraform terraform output
+        ;;
+
+      other)
+        echo "terraform ${TERRAFORM_OTHER_ARGS}"
+        docker exec -i terraform terraform ${TERRAFORM_OTHER_ARGS}
+        ;;
+
+      *)
+        echo $"Usage: $0 {plan|apply|output|destroy|unlock}"
+        exit 1
+esac
+
+
+echo "stopping terraform container"
+docker rm --force terraform || true
+
+#docker rmi --force ${IMAGE_NAME}
+#rm -rf ${OUTPUT_DIR}/.aws || true
+#sudo rm -rf ${OUTPUT_DIR}/.aws || true
+

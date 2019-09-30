@@ -12,4 +12,26 @@ jenkins_alb will either need EFS mounting(not implemented yet) or s3 mount as ec
 
     zip -r jobs.zip jobs/
     
+
+#SSH
+
+ip=$(aws ec2 describe-instances --filters "Name=tag:Environment,Values=em-jenkins" --query "Reservations[].Instances[].PrivateIpAddress" --region us-west-2 --output text)
+
+ssh-keygen -R $ip;ssh ec2-user@$ip -i ~/.ssh/xxops
+
+
+# Terminate Jenkins EC2 from outside; by getting ip address using ec2 tags
+
+ssh -i ~/.ssh/xxx ec2-user@$(aws ec2 describe-instances --filters "Name=tag:Environment,Values=em-jenkins" --query "Reservations[].Instances[].PrivateIpAddress" --region us-west-2 --output text)
+ -t 'sudo /sbin/shutdown -h now'
+ 
+ 
+# Terminate Jenkins EC2 from inside
+
+Use a lambda function and trigger than Fn from a jenkins job inside
+
+aws lambda invoke --function-name $LAMBDA_FUNCTION_NAME delete.json --payload "{\"key1\": \"value1\"}"
+
+aws lambda invoke --function-name $LAMBDA_FUNCTION_NAME delete.json >> delete2.json &
+    
     

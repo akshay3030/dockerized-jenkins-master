@@ -7,3 +7,10 @@
 .backup
 .DS_Store
 .war
+
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+*.zip

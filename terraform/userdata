@@ -7,27 +7,44 @@ sleep 15s
 echo "list data template variable"
 echo ${region}
 echo ${ebs_volume_id}
+echo ${r53_zone_base}
 
 aws configure set default.region ${region}
+
+# To handle unsecure artifactory docker registry, add the cert (x509: certificate signed by unknown authority)
+
 yum update -y
 yum install docker -y
+
+mkdir -p /etc/docker/certs.d/
+mkdir -p /etc/docker/certs.d/docker-local.emartifactory-sac.dco.elmae
+curl -H "User-Agent: ${s3_access_key}" --output /etc/docker/certs.d/docker-local.emartifactory-sac.dco.elmae/ca.crt -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/cert/ca.crt
+
+mkdir -p /var/jenkins_home/
+#export DOCKER_CONFIG=/var/jenkins_home
+#echo $DOCKER_CONFIG
+echo "DOCKER_CONFIG=/var/jenkins_home" > /etc/environment
+cat /etc/environment
+
 service docker start
 echo "docker setup & started"
 docker version
 chmod 766 /var/run/docker.sock
 
 
-curl -L "https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-echo "docker-compose setup"
-docker-compose -v
+#curl -L "https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+#chmod +x /usr/local/bin/docker-compose
+#echo "docker-compose setup"
+#docker-compose -v
+
+yum install python-pip -y
+pip install docker-compose
 
 InstanceID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 
+
 #Run it as backgroup detached process
 aws ec2 attach-volume --volume-id ${ebs_volume_id} --instance-id $InstanceID --device /dev/xvdb
-
-mkdir -p /var/jenkins_home/
 
 #if mount /dev/xvdb /var/jenkins_home/ | grep -i error 2>&1 > /dev/null
 #if file -s /dev/xvdb | grep -i "/dev/xvdb: data" 2>&1 > /dev/null
@@ -66,48 +83,24 @@ lsblk
 df -h
 
 #curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jobs.zip
+#curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jobs.tar.gz
 #curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/credentials.xml
 #unzip jobs.zip && cp -r jobs/ /var/jenkins_home/ && cp credentials.xml /var/jenkins_home/credentials.xml
+#tar -zxvf jobs.tar.gz -C /var/jenkins_home/ ; cp credentials.xml /var/jenkins_home/credentials.xml
 
 
-curl -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jenkins.zip
+curl -H "User-Agent: ${s3_access_key}" -O -L https://s3-us-west-2.amazonaws.com/em-devops-terraform/utilities/jenkins/jenkins.zip
 
 unzip jenkins.zip
 cd jenkins
 
+#cat /var/jenkins_home/config.json
+#docker --config /var/jenkins_home/ pull docker-local.emartifactory-xxx.xxx.xxx/devops/jenkins:v1
+
 ./create_jenkins_stack_docker.sh up
-
-
-#file -s /dev/xvdb | grep "/dev/xvdb:"
-
-#if file -s /dev/xvdb | grep -i /dev/xvdb 2>&1 > /dev/null
-# then
-#    echo "volume aready"
-#    mkfs.ext4 /dev/xvdf
-#    mount /dev/xvdf /var/jenkins_home
-# else
-#    mount /dev/xvdf /var/jenkins_home -t ext4
-#fi
-
-
-#which python
-#python --version
-#pip --version
-
-
-#InstanceID=`/usr/bin/curl -s http://169.254.169.254/latest/meta-data/instance-id`
-#InstanceID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-#PublicIP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-#PrivateIP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-
-#echo $InstanceID
-#echo $PrivateIP
-
-#yum -y install httpd
-#str1="<html><h1>Hello from MachineIP --> "
-#str2="</h1></html>"
-#echo $str1$PrivateIP$str2 > /var/www/html/index.html
-#sudo service httpd start
-
-
+sleep 30s
+HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --query "HostedZones[?starts_with(Name, '${r53_zone_base}')].Id" --output text | sed -e 's/\/.*\///g')
+PrivateIP=$(curl -s curl http://169.254.169.254/latest/meta-data/local-ipv4)
+RECORD_SET_NAME="${environment}.${environment_prefix}.${r53_zone_base}"
+aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch '{"Changes": [{"Action": "UPSERT","ResourceRecordSet": {"Name": "'"$RECORD_SET_NAME"'","Type": "A","TTL": 300,"ResourceRecords": [{"Value": "'"$PrivateIP"'"}]}}]}'
 echo "user_data is done"

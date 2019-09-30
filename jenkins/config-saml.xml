@@ -17,7 +17,7 @@
         <binding>urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect</binding>
         <idpMetadataConfiguration>
             <xml></xml>
-            <url>https://xxx-devops.okta.com/app/exk2sjzyglNDrRCgp356/sso/saml/metadata</url>
+            <url>https://elliemae-devops.okta.com/app/exk2sjzyglNDrRCgp356/sso/saml/metadata</url>
             <period>0</period>
         </idpMetadataConfiguration>
     </securityRealm>
