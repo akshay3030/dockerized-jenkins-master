@@ -88,3 +88,4 @@ build-user-vars-plugin
 active-directory
 embeddable-build-status
 slack
+role-strategy
