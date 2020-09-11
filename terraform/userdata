@@ -37,8 +37,10 @@ chmod 766 /var/run/docker.sock
 #echo "docker-compose setup"
 #docker-compose -v
 
-yum install python-pip -y
-pip install docker-compose
+#yum install python-pip -y
+#pip install docker-compose
+yum install python3 -y
+pip3 install docker-compose
 
 InstanceID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 

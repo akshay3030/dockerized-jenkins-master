@@ -38,7 +38,7 @@ resource "aws_autoscaling_group" "webapp_v1" {
 
   #load_balancers = ["${aws_elb.clb.id}"]
   #target_group_arns = ["${aws_alb_target_group.tgHttp.arn}"]
-  availability_zones = ["${var.aws_region}${var.availibity_zone_suffix}"]
+  #availability_zones = ["${var.aws_region}${var.availibity_zone_suffix}"]
 
   vpc_zone_identifier = ["${data.aws_subnet.private_subnet_0.id}"]
 
